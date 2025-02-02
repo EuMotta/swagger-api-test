@@ -1,10 +1,88 @@
-export class AuthResponseDto {
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+
+export class AuthRequestDto {
+  @IsEmail()
+  @IsNotEmpty()
+  @ApiProperty({
+    description: 'User email',
+    example: 'user@example.com',
+  })
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({
+    description: 'User password',
+    example: 'mypassword123',
+  })
+  password: string;
+}
+
+class AuthResponseUser {
+  @ApiProperty({
+    description: 'User ID',
+    example: 'a3e1f9c7-d2a1-41f0-9f9e-b86cb78a6ec3',
+  })
+  id: string;
+  @ApiProperty({
+    description: 'User Email',
+    example: 'user@example.com',
+  })
+  email: string;
+  @ApiProperty({
+    description: 'User ID',
+    example: 'John',
+  })
+  name: string;
+  @ApiProperty({
+    description: 'User ID',
+    example: 'Motta',
+  })
+  last_name: string;
+}
+
+class AuthResponse {
+  @ApiProperty({
+    description: 'JWT token returned after successful authentication',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  })
   token: string;
+
+  @ApiProperty({
+    description: 'Token expiration time in seconds',
+    example: 3600,
+  })
   expiresIn: number;
-  user: {
-    id: string;
-    email: string;
-    last_name: string;
-    name: string;
-  };
+
+  @ApiProperty({
+    description: 'Details of the authenticated user',
+    example: {
+      id: 'a3e1f9c7-d2a1-41f0-9f9e-b86cb78a6ec3',
+      email: 'user@example.com',
+      last_name: 'Doe',
+      name: 'John',
+    },
+  })
+  user: AuthResponseUser;
+}
+
+export class AuthResponseDto {
+  @ApiProperty({
+    description: 'Indicates if the request was successful or not',
+    example: false,
+  })
+  error: boolean;
+
+  @ApiProperty({
+    description: 'Message associated with the API response',
+    example: 'Login realizado com sucesso',
+  })
+  message: string;
+
+  @ApiProperty({
+    description: 'The data returned by the API',
+    type: AuthResponse,
+  })
+  data: AuthResponse;
 }

@@ -19,9 +19,13 @@ export class AuthService {
     );
   }
 
-  async signIn(email: string, password: string): Promise<AuthResponseDto> {
+  async signIn(
+    email: string,
+    password: string,
+  ): Promise<AuthResponseDto> {
     const findUser = await this.usersService.findByUserEmail(email);
     const foundUser = findUser.data;
+
     if (!email || !password) {
       throw new UnauthorizedException('Credenciais não fornecidas');
     }
@@ -37,8 +41,8 @@ export class AuthService {
     }
 
     const payload = { sub: foundUser.id, email: foundUser.email };
-
     const token = this.jwtService.sign(payload);
+
     const user = {
       id: foundUser.id,
       email: foundUser.email,
@@ -46,6 +50,14 @@ export class AuthService {
       last_name: foundUser.last_name,
     };
 
-    return { token, expiresIn: this.jwtExpirationTimeInSeconds, user };
+    return {
+      error: false,
+      message: 'Login realizado com sucesso',
+      data: {
+        token,
+        expiresIn: this.jwtExpirationTimeInSeconds,
+        user,
+      },
+    };
   }
 }
