@@ -10,6 +10,8 @@ import { DbModule } from './db/db.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { seconds } from './utils';
+import { RegisterController } from './register/register.controller';
+import { RegisterModule } from './register/register.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -33,8 +35,10 @@ import { seconds } from './utils';
         },
       ],
     }),
+
+    RegisterModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, RegisterController],
   providers: [
     AppService,
 

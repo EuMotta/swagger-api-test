@@ -1,12 +1,12 @@
-import { ApiResponse } from 'src/interfaces/api';
+import { ApiResponseData } from 'src/interfaces/api';
 
 export function createApiResponse({
   error = false,
   message,
   data = null,
-}): ApiResponse<any> {
+}): ApiResponseData<any> {
   return {
-    error: !error,
+    error: error,
     message,
     data: error ? data : null,
   };

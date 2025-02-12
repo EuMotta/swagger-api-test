@@ -13,7 +13,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from 'src/db/entities/user.entity';
 import { Repository } from 'typeorm';
 import { validate } from 'class-validator';
-import { ApiResponse } from 'src/interfaces/api';
+import { ApiResponseData } from 'src/interfaces/api';
 import { createApiResponse } from 'src/db/db-response';
 
 @Injectable()
@@ -23,9 +23,13 @@ export class UsersService {
     private usersRepository: Repository<UserEntity>,
   ) {}
 
-  async create(newUser: UserDto): Promise<ApiResponse<CreateUserResponse>> {
+  async create(
+    newUser: CreateUserResponse,
+  ): Promise<ApiResponseData<CreateUserResponse>> {
     try {
+      console.log(newUser);
       const userAlreadyRegistered = await this.findByUserEmail(newUser.email);
+      console.log(userAlreadyRegistered);
       if (userAlreadyRegistered) {
         throw new ConflictException('Email já cadastrado');
       }
@@ -33,7 +37,6 @@ export class UsersService {
       const dbUser = new UserEntity();
       dbUser.name = newUser.name;
       dbUser.last_name = newUser.last_name;
-      dbUser.image = newUser.image;
       dbUser.email = newUser.email;
       dbUser.password = newUser.password;
 
@@ -54,7 +57,10 @@ export class UsersService {
       const savedUser = await this.usersRepository.save(dbUser);
       console.log('Usuario salvo:', savedUser);
 
-      return createApiResponse({ message: 'Usuário criado com sucesso' });
+      return createApiResponse({
+        message: 'Usuário criado com sucesso',
+        error: false,
+      });
     } catch (error) {
       if (
         error instanceof ConflictException ||
@@ -69,7 +75,7 @@ export class UsersService {
       );
     }
   }
-  async getAll(): Promise<ApiResponse<UserDto[]>> {
+  async getAll(): Promise<ApiResponseData<UserDto[]>> {
     try {
       const users = await this.usersRepository.find();
       if (!users) {
@@ -97,7 +103,9 @@ export class UsersService {
     }
   }
 
-  async findByUserEmail(email: string): Promise<ApiResponse<UserDto | null>> {
+  async findByUserEmail(
+    email: string,
+  ): Promise<ApiResponseData<UserDto | null> | null> {
     if (!this.isValidEmail(email)) {
       throw new BadRequestException('Formato de email inválido');
     }
@@ -107,10 +115,11 @@ export class UsersService {
     });
 
     if (!userFound) {
-      throw new NotFoundException(`Usuário não encontrado.`);
+      return null;
     }
 
     return {
+      error: false,
       message: 'Usuário encontrado com sucesso!',
       data: {
         id: userFound.id,

@@ -11,11 +11,10 @@ import { map } from 'rxjs/operators';
 export class ResponseInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
-    const path = request?.route?.path; // Obtendo a rota atual
+    const path = request?.route?.path;
 
-    // Ignorar a rota "/auth"
     if (path && path.startsWith('/auth')) {
-      return next.handle(); // Não aplica o interceptor
+      return next.handle();
     }
 
     return next.handle().pipe(

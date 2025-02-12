@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { ConfigService } from '@nestjs/config';
 import { AuthResponseDto } from './auth.dto';
@@ -24,6 +24,9 @@ export class AuthService {
     password: string,
   ): Promise<AuthResponseDto> {
     const findUser = await this.usersService.findByUserEmail(email);
+    if (!findUser) {
+      throw new NotFoundException(`Usuário não encontrado.`);
+    }
     const foundUser = findUser.data;
 
     if (!email || !password) {
