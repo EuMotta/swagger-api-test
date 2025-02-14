@@ -8,6 +8,6 @@ export function createApiResponse({
   return {
     error: error,
     message,
-    data: error ? data : null,
+    data: error ? null : data,
   };
 }

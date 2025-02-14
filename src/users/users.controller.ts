@@ -6,12 +6,18 @@ import {
   HttpStatus,
   Param,
   Post,
+  Put,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserResponse, UserDto } from './user.dto';
+import { CreateUserResponse, UpdateUserResponse, UpdateUserStatusResponse, UserDto } from './user.dto';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ApiResponseData } from 'src/interfaces/api';
+import { PageDto } from 'src/db/pagination/page.dto';
+import { PageOptionsDto } from 'src/db/pagination/page-options.dto';
+import { AdminOnly } from 'src/guards/role.guard';
 
 @ApiTags('users')
 @Controller('users')
@@ -55,8 +61,10 @@ export class UsersController {
   })
   @ApiBody({ type: UserDto })
   /* swagger end */
-  async getAll(): Promise<ApiResponseData<UserDto[]>> {
-    return this.usersService.getAll();
+  async getAll(
+    @Query() pageOptionsDto: PageOptionsDto,
+  ): Promise<ApiResponseData<PageDto<UserDto>>> {
+    return this.usersService.getAll(pageOptionsDto);
   }
 
   @Get('/:email')
@@ -67,16 +75,60 @@ export class UsersController {
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Get all users successful',
+    description: 'Get User With Email successful',
     type: CreateUserResponse,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Get all users Fail',
+    description: 'Get User With Email Fail',
   })
   @ApiBody({ type: UserDto })
   /* swagger end */
   findByEmail(@Param('email') email: string) {
     return this.usersService.findByUserEmail(email);
+  }
+
+  @UseGuards(AdminOnly)
+  @Put('/:email')
+  /* swagger start */
+  @ApiOperation({
+    summary: 'Update User With Email',
+    operationId: 'updateUserByEmail',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Update User With Email successful',
+    type: CreateUserResponse,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Update User With Email Fail',
+  })
+  @ApiBody({ type: UserDto })
+  /* swagger end */
+  update(@Body() user: UpdateUserResponse) {
+    return this.usersService.update(user);
+  }
+
+  @UseGuards(AdminOnly)
+  @Put('update_status/:email')
+  /* swagger start */
+  @ApiOperation({
+    summary: 'Update user status',
+    operationId: 'updateUserStatus',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Update User status successful',
+    type: CreateUserResponse,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Update User status Fail',
+  })
+  @ApiBody({ type: UserDto })
+  /* swagger end */
+  updateStatus(@Body() data: UpdateUserStatusResponse) {
+    return this.usersService.updateStatus(data);
   }
 }

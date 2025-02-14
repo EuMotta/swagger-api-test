@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { FindAllParameters, TaskDto, TaskStatusEnun } from './task.dto';
 import { v4 as uuid } from 'uuid';
+
 @Injectable()
 export class TaskService {
   private tasks: TaskDto[] = [];
@@ -25,6 +26,7 @@ export class TaskService {
   }
 
   findAll(params: FindAllParameters): TaskDto[] {
+    console.log('taskc');
     return this.tasks.filter((t) => {
       let match = true;
       if (params.title !== undefined && !t.title.includes(params.title)) {

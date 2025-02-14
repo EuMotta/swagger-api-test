@@ -3,6 +3,7 @@ import {
   IsBoolean,
   IsDate,
   IsEmail,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -10,6 +11,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { UserRole } from 'src/db/entities/user.entity';
 
 export class UserDto {
   @IsUUID()
@@ -48,6 +50,13 @@ export class UserDto {
     example: 'user@example.com',
   })
   email: string;
+
+  @IsString()
+  @ApiProperty({
+    description: 'User role',
+    example: 'Admin',
+  })
+  role: string;
 
   @IsBoolean()
   @IsOptional()
@@ -125,6 +134,17 @@ export class CreateUserResponse {
   })
   name: string;
 
+  @IsNotEmpty({ message: 'O cargo é obrigatório.' })
+  @IsEnum(UserRole, { message: 'O cargo deve ser um valor válido do enum.' })
+  @MaxLength(30, { message: 'O nome pode ter no máximo 30 caracteres' })
+  @ApiProperty({
+    description: 'Editar cargo do usuário',
+    example: 'João',
+    minLength: 1,
+    maxLength: 30,
+  })
+  role: string;
+
   @IsEmail({}, { message: 'O e-mail deve ser válido' })
   @IsNotEmpty({ message: 'O email não pode estar vazio' })
   @MaxLength(256, { message: 'O e-mail pode ter no máximo 256 caracteres' })
@@ -146,4 +166,91 @@ export class CreateUserResponse {
     minLength: 6,
   })
   password: string;
+}
+
+export class UpdateUserResponse {
+  @IsString()
+  @IsOptional()
+  @MaxLength(80, { message: 'O sobrenome pode ter no máximo 80 caracteres' })
+  @ApiProperty({
+    description: 'Editar Sobrenome do usuário',
+    example: 'Silva',
+    minLength: 1,
+    maxLength: 80,
+  })
+  last_name: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(30, { message: 'O nome pode ter no máximo 30 caracteres' })
+  @ApiProperty({
+    description: 'Editar Nome do usuário',
+    example: 'João',
+    minLength: 1,
+    maxLength: 30,
+  })
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(30, { message: 'O nome pode ter no máximo 30 caracteres' })
+  @ApiProperty({
+    description: 'Editar Nome do usuário',
+    example: 'João',
+    minLength: 1,
+    maxLength: 30,
+  })
+  image: string;
+
+  @IsOptional()
+  @IsEnum(UserRole, { message: 'O cargo deve ser um valor válido do enum.' })
+  @MaxLength(30, { message: 'O nome pode ter no máximo 30 caracteres' })
+  @ApiProperty({
+    description: 'Editar Cargo do usuário',
+    example: 'ADMIN',
+    minLength: 1,
+    maxLength: 30,
+  })
+  role: string;
+
+  @IsEmail({}, { message: 'O e-mail deve ser válido' })
+  @IsOptional()
+  @MaxLength(256, { message: 'O e-mail pode ter no máximo 256 caracteres' })
+  @ApiProperty({
+    description: 'Editar E-mail do usuário',
+    example: 'joao@email.com',
+    format: 'email',
+    minLength: 1,
+    maxLength: 256,
+  })
+  email: string;
+
+  @IsString()
+  @IsOptional()
+  @MinLength(6, { message: 'A senha deve ter no mínimo 6 caracteres' })
+  @ApiProperty({
+    description: 'Editar Senha do usuário (mínimo 6 caracteres)',
+    example: 'minhasenha123',
+    minLength: 6,
+  })
+  password: string;
+}
+export class UpdateUserStatusResponse {
+  @IsBoolean()
+  @ApiProperty({
+    description: 'Atualizar status do usuário',
+    example: true,
+  })
+  status: boolean;
+
+  @IsEmail({}, { message: 'O e-mail deve ser válido' })
+  @IsOptional()
+  @ApiProperty({
+    description: 'Email para atualizar o status E-mail do usuário',
+    example: 'joao@email.com',
+    format: 'email',
+    minLength: 1,
+    maxLength: 256,
+  })
+  email: string;
 }

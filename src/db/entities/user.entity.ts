@@ -1,12 +1,20 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 import {
   IsEmail,
+  IsEnum,
   IsNotEmpty,
   IsString,
   IsStrongPassword,
   Length,
 } from 'class-validator';
 import { BaseEntity } from './base.entity';
+
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  USER = 'USER',
+  MANAGER = 'MANAGER',
+  FOUNDER = 'FOUNDER',
+}
 
 @Entity({ name: 'user' })
 export class UserEntity extends BaseEntity {
@@ -33,6 +41,15 @@ export class UserEntity extends BaseEntity {
   @IsEmail({}, { message: 'O e-mail deve ser válido.' })
   @Length(6, 100, { message: 'O email deve ter entre 6 e 100 caracteres.' })
   email: string;
+
+  @Column({
+    type: 'enum',
+    enum: UserRole,
+    default: UserRole.USER,
+  })
+  @IsNotEmpty({ message: 'O cargo é obrigatório.' })
+  @IsEnum(UserRole, { message: 'O cargo deve ser um valor válido do enum.' })
+  role: UserRole;
 
   @Column({ type: 'boolean', default: true })
   is_active: boolean;

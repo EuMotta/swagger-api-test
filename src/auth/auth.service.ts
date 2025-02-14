@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { ConfigService } from '@nestjs/config';
 import { AuthResponseDto } from './auth.dto';
@@ -19,48 +24,69 @@ export class AuthService {
     );
   }
 
-  async signIn(
-    email: string,
-    password: string,
-  ): Promise<AuthResponseDto> {
-    const findUser = await this.usersService.findByUserEmail(email);
-    if (!findUser) {
-      throw new NotFoundException(`Usuário não encontrado.`);
-    }
-    const foundUser = findUser.data;
+  async signIn(email: string, password: string): Promise<AuthResponseDto> {
+    try {
+      console.log('chegou');
+      const findUser = await this.usersService.findByUserEmailAuth(email);
 
-    if (!email || !password) {
-      throw new UnauthorizedException('Credenciais não fornecidas');
-    }
+      if (!findUser) {
+        throw new NotFoundException('Usuário não encontrado.');
+      }
 
-    if (!foundUser || !bcryptCompareSync(password, foundUser.password)) {
-      throw new UnauthorizedException('Usuário não encontrado');
-    }
-    if (!foundUser.is_active) {
-      throw new UnauthorizedException('Sua conta foi desativada');
-    }
-    if (foundUser.is_banned) {
-      throw new UnauthorizedException('Sua conta está banida.');
-    }
+      const foundUser = findUser.data;
 
-    const payload = { sub: foundUser.id, email: foundUser.email };
-    const token = this.jwtService.sign(payload);
+      if (!email || !password) {
+        throw new UnauthorizedException('Credenciais não fornecidas');
+      }
 
-    const user = {
-      id: foundUser.id,
-      email: foundUser.email,
-      name: foundUser.name,
-      last_name: foundUser.last_name,
-    };
+      if (!foundUser || !bcryptCompareSync(password, foundUser.password)) {
+        throw new UnauthorizedException('Usuário não encontrado');
+      }
+      if (!foundUser.is_active) {
+        throw new UnauthorizedException('Sua conta foi desativada');
+      }
+      if (foundUser.is_banned) {
+        throw new UnauthorizedException('Sua conta está banida.');
+      }
+      const payload = {
+        sub: foundUser.id,
+        email: foundUser.email,
+        role: foundUser.role,
+      };
+      console.log(foundUser);
 
-    return {
-      error: false,
-      message: 'Login realizado com sucesso',
-      data: {
-        token,
-        expiresIn: this.jwtExpirationTimeInSeconds,
-        user,
-      },
-    };
+      const token = this.jwtService.sign(payload);
+
+      const user = {
+        id: foundUser.id,
+        email: foundUser.email,
+        name: foundUser.name,
+        last_name: foundUser.last_name,
+      };
+
+      console.log('passou aqui');
+      return {
+        error: false,
+        message: 'Login realizado com sucesso',
+        data: {
+          token,
+          expiresIn: this.jwtExpirationTimeInSeconds,
+          user,
+        },
+      };
+    } catch (error) {
+      console.error('Erro no login:', error);
+
+      if (
+        error instanceof NotFoundException ||
+        error instanceof UnauthorizedException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        'Ocorreu um erro ao tentar fazer login.',
+      );
+    }
   }
 }

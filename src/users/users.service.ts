@@ -6,15 +6,24 @@ import {
   HttpException,
   HttpStatus,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
-import { CreateUserResponse, UserDto } from './user.dto';
+import {
+  CreateUserResponse,
+  UpdateUserResponse,
+  UpdateUserStatusResponse,
+  UserDto,
+} from './user.dto';
 import { hashSync as bcryptHashSync } from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { UserEntity } from 'src/db/entities/user.entity';
+import { UserEntity, UserRole } from 'src/db/entities/user.entity';
 import { Repository } from 'typeorm';
 import { validate } from 'class-validator';
 import { ApiResponseData } from 'src/interfaces/api';
 import { createApiResponse } from 'src/db/db-response';
+import { PageOptionsDto } from 'src/db/pagination/page-options.dto';
+import { PageDto } from 'src/db/pagination/page.dto';
+import { PageMetaDto } from 'src/db/pagination/page-meta.dto';
 
 @Injectable()
 export class UsersService {
@@ -34,10 +43,15 @@ export class UsersService {
         throw new ConflictException('Email já cadastrado');
       }
 
+      if (!Object.values(UserRole).includes(newUser.role as UserRole)) {
+        throw new BadRequestException('O cargo informado é inválido.');
+      }
+
       const dbUser = new UserEntity();
       dbUser.name = newUser.name;
       dbUser.last_name = newUser.last_name;
       dbUser.email = newUser.email;
+      dbUser.role = newUser.role as UserRole;
       dbUser.password = newUser.password;
 
       const errors = await validate(dbUser);
@@ -75,18 +89,184 @@ export class UsersService {
       );
     }
   }
-  async getAll(): Promise<ApiResponseData<UserDto[]>> {
+
+  async update(
+    data: UpdateUserResponse,
+  ): Promise<ApiResponseData<UpdateUserResponse>> {
     try {
-      const users = await this.usersRepository.find();
-      if (!users) {
-        throw new HttpException(
-          `nenhum usuário encontrado`,
-          HttpStatus.NOT_FOUND,
+      const userToUpdate = await this.usersRepository.findOne({
+        where: { email: data.email },
+      });
+
+      if (!userToUpdate) {
+        throw new NotFoundException('Usuário não encontrado');
+      }
+
+      if (
+        data.role &&
+        !Object.values(UserRole).includes(data.role as UserRole)
+      ) {
+        throw new BadRequestException('O cargo informado é inválido.');
+      }
+
+      userToUpdate.name = data.name ?? userToUpdate.name;
+      userToUpdate.last_name = data.last_name ?? userToUpdate.last_name;
+      userToUpdate.role = (data.role as UserRole) ?? userToUpdate.role;
+      userToUpdate.image = data.image ?? userToUpdate.image;
+
+      if (data.password) {
+        userToUpdate.password = bcryptHashSync(data.password, 10);
+      }
+
+      const errors = await validate(userToUpdate);
+
+      if (errors.length > 0) {
+        const messages = errors
+          .map((error) =>
+            error.constraints ? Object.values(error.constraints) : [],
+          )
+          .flat();
+
+        throw new BadRequestException(messages);
+      }
+
+      const savedUser = await this.usersRepository.save(userToUpdate);
+      console.log('Usuário atualizado:', savedUser);
+
+      return {
+        error: false,
+        message: 'Usuário atualizado com sucesso!',
+        data: null,
+      };
+    } catch (error) {
+      console.error('Erro ao atualizar usuário:', error);
+
+      if (
+        error instanceof NotFoundException ||
+        error instanceof UnauthorizedException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        'Ocorreu um erro ao atualizar o usuário',
+      );
+    }
+  }
+
+  async updateStatus(
+    data: UpdateUserStatusResponse,
+  ): Promise<ApiResponseData<UpdateUserStatusResponse>> {
+    try {
+      const userToUpdate = await this.usersRepository.findOne({
+        where: { email: data.email },
+      });
+
+      if (!userToUpdate) {
+        throw new NotFoundException('Usuário não encontrado');
+      }
+
+      userToUpdate.is_active = data.status;
+
+      const errors = await validate(userToUpdate);
+
+      if (errors.length > 0) {
+        const messages = errors
+          .map((error) =>
+            error.constraints ? Object.values(error.constraints) : [],
+          )
+          .flat();
+
+        throw new BadRequestException(messages);
+      }
+
+      const savedUser = await this.usersRepository.save(userToUpdate);
+
+      console.log('Usuário atualizado:', savedUser);
+
+      return {
+        error: false,
+        message: 'Usuário atualizado com sucesso!',
+        data: null,
+      };
+    } catch (error) {
+      console.error('Erro ao atualizar usuário:', error);
+
+      if (
+        error instanceof NotFoundException ||
+        error instanceof UnauthorizedException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        'Ocorreu um erro ao atualizar o usuário',
+      );
+    }
+  }
+
+  async getAll(
+    pageOptionsDto: PageOptionsDto,
+  ): Promise<ApiResponseData<PageDto<UserDto>>> {
+    try {
+      const { page, limit, search, status, order, orderBy } = pageOptionsDto;
+      const offset = (page - 1) * limit;
+
+      console.log('search:', search);
+      console.log('status:', status);
+      console.log('order:', order);
+      console.log('orderBy:', orderBy);
+
+      const queryBuilder = this.usersRepository
+        .createQueryBuilder('user')
+        .select([
+          'user.name',
+          'user.last_name',
+          'user.email',
+          'user.image',
+          'user.is_active',
+          'user.created_at',
+          'user.is_banned',
+        ])
+        .limit(limit)
+        .offset(offset);
+
+      if (search) {
+        queryBuilder.andWhere(
+          '(user.name LIKE :search OR user.email LIKE :search)',
+          { search: `%${search}%` },
         );
       }
+
+      if (status) {
+        const isActive = status === 'true';
+        queryBuilder.andWhere('user.is_active = :status', { status: isActive });
+      }
+
+      if (orderBy) {
+        const validColumns = ['name', 'last_name', 'email', 'created_at'];
+        if (!validColumns.includes(orderBy)) {
+          throw new BadRequestException(
+            `Campo de ordenação inválido: ${orderBy}`,
+          );
+        }
+        queryBuilder.orderBy(`user.${orderBy}`, order || 'ASC');
+      } else {
+        queryBuilder.orderBy('user.created_at', order || 'ASC');
+      }
+
+      const itemCount = await queryBuilder.getCount();
+      const users = await queryBuilder.getMany();
+
+      const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
+      const pageDto = new PageDto(users, pageMetaDto);
+
       return {
-        message: 'Lista de usuários encontrada com sucesso!',
-        data: users,
+        error: false,
+        message: 'Usuários encontrados com sucesso!',
+        data: pageDto,
       };
     } catch (error) {
       if (
@@ -103,16 +283,28 @@ export class UsersService {
     }
   }
 
-  async findByUserEmail(
+  async findByUserEmailAuth(
     email: string,
   ): Promise<ApiResponseData<UserDto | null> | null> {
     if (!this.isValidEmail(email)) {
       throw new BadRequestException('Formato de email inválido');
     }
 
-    const userFound = await this.usersRepository.findOne({
-      where: { email },
-    });
+    const userFound = await this.usersRepository
+      .createQueryBuilder('user')
+      .select([
+        'user.id',
+        'user.name',
+        'user.last_name',
+        'user.email',
+        'user.image',
+        'user.is_active',
+        'user.created_at',
+        'user.is_banned',
+        'user.password',
+      ])
+      .where('user.email = :email', { email })
+      .getOne();
 
     if (!userFound) {
       return null;
@@ -121,18 +313,42 @@ export class UsersService {
     return {
       error: false,
       message: 'Usuário encontrado com sucesso!',
-      data: {
-        id: userFound.id,
-        name: userFound.name,
-        last_name: userFound.last_name,
-        image: userFound.image,
-        email: userFound.email,
-        is_active: userFound.is_active,
-        is_banned: userFound.is_banned,
-        password: userFound.password,
-      },
+      data: userFound,
     };
   }
+  async findByUserEmail(
+    email: string,
+  ): Promise<ApiResponseData<UserDto | null> | null> {
+    if (!this.isValidEmail(email)) {
+      throw new BadRequestException('Formato de email inválido');
+    }
+
+    const userFound = await this.usersRepository
+      .createQueryBuilder('user')
+      .select([
+        'user.id',
+        'user.name',
+        'user.last_name',
+        'user.email',
+        'user.image',
+        'user.is_active',
+        'user.created_at',
+        'user.is_banned',
+      ])
+      .where('user.email = :email', { email })
+      .getOne();
+
+    if (!userFound) {
+      return null;
+    }
+
+    return {
+      error: false,
+      message: 'Usuário encontrado com sucesso!',
+      data: userFound,
+    };
+  }
+
   private isValidEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
