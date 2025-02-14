@@ -27,7 +27,6 @@ export class AdminOnly implements CanActivate {
 
     try {
       const decodedToken = this.jwtService.verify(token);
-
       if (decodedToken.role !== 'ADMIN') {
         throw new ForbiddenException(
           'Acesso negado. Apenas administradores podem acessar esta rota.',

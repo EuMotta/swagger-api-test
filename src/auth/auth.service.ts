@@ -26,9 +26,7 @@ export class AuthService {
 
   async signIn(email: string, password: string): Promise<AuthResponseDto> {
     try {
-      console.log('chegou');
       const findUser = await this.usersService.findByUserEmailAuth(email);
-
       if (!findUser) {
         throw new NotFoundException('Usuário não encontrado.');
       }
@@ -53,7 +51,6 @@ export class AuthService {
         email: foundUser.email,
         role: foundUser.role,
       };
-      console.log(foundUser);
 
       const token = this.jwtService.sign(payload);
 
@@ -64,7 +61,6 @@ export class AuthService {
         last_name: foundUser.last_name,
       };
 
-      console.log('passou aqui');
       return {
         error: false,
         message: 'Login realizado com sucesso',

@@ -128,7 +128,10 @@ export class UsersController {
   })
   @ApiBody({ type: UserDto })
   /* swagger end */
-  updateStatus(@Body() data: UpdateUserStatusResponse) {
-    return this.usersService.updateStatus(data);
+  updateStatus(
+    @Param('email') email: string, 
+    @Body() data: UpdateUserStatusResponse
+  ) {
+    return this.usersService.updateStatus(email, data);
   }
 }

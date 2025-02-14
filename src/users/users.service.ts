@@ -36,9 +36,7 @@ export class UsersService {
     newUser: CreateUserResponse,
   ): Promise<ApiResponseData<CreateUserResponse>> {
     try {
-      console.log(newUser);
       const userAlreadyRegistered = await this.findByUserEmail(newUser.email);
-      console.log(userAlreadyRegistered);
       if (userAlreadyRegistered) {
         throw new ConflictException('Email já cadastrado');
       }
@@ -68,8 +66,7 @@ export class UsersService {
 
       dbUser.password = bcryptHashSync(newUser.password, 10);
 
-      const savedUser = await this.usersRepository.save(dbUser);
-      console.log('Usuario salvo:', savedUser);
+      await this.usersRepository.save(dbUser);
 
       return createApiResponse({
         message: 'Usuário criado com sucesso',
@@ -130,8 +127,7 @@ export class UsersService {
         throw new BadRequestException(messages);
       }
 
-      const savedUser = await this.usersRepository.save(userToUpdate);
-      console.log('Usuário atualizado:', savedUser);
+      await this.usersRepository.save(userToUpdate);
 
       return {
         error: false,
@@ -156,18 +152,20 @@ export class UsersService {
   }
 
   async updateStatus(
+    userEmail: string,
     data: UpdateUserStatusResponse,
   ): Promise<ApiResponseData<UpdateUserStatusResponse>> {
     try {
       const userToUpdate = await this.usersRepository.findOne({
-        where: { email: data.email },
+        where: { email: userEmail },
       });
 
       if (!userToUpdate) {
         throw new NotFoundException('Usuário não encontrado');
       }
-
-      userToUpdate.is_active = data.status;
+      if (data.status === true) {
+        userToUpdate.is_active = !userToUpdate.is_active;
+      }
 
       const errors = await validate(userToUpdate);
 
@@ -180,14 +178,11 @@ export class UsersService {
 
         throw new BadRequestException(messages);
       }
-
-      const savedUser = await this.usersRepository.save(userToUpdate);
-
-      console.log('Usuário atualizado:', savedUser);
+      await this.usersRepository.save(userToUpdate);
 
       return {
         error: false,
-        message: 'Usuário atualizado com sucesso!',
+        message: `Usuário ${userToUpdate.is_active ? 'Ativado' : 'Desativado'} com sucesso!`,
         data: null,
       };
     } catch (error) {
@@ -213,11 +208,6 @@ export class UsersService {
     try {
       const { page, limit, search, status, order, orderBy } = pageOptionsDto;
       const offset = (page - 1) * limit;
-
-      console.log('search:', search);
-      console.log('status:', status);
-      console.log('order:', order);
-      console.log('orderBy:', orderBy);
 
       const queryBuilder = this.usersRepository
         .createQueryBuilder('user')
@@ -298,6 +288,7 @@ export class UsersService {
         'user.last_name',
         'user.email',
         'user.image',
+        'user.role',
         'user.is_active',
         'user.created_at',
         'user.is_banned',
@@ -316,6 +307,7 @@ export class UsersService {
       data: userFound,
     };
   }
+
   async findByUserEmail(
     email: string,
   ): Promise<ApiResponseData<UserDto | null> | null> {
@@ -337,7 +329,6 @@ export class UsersService {
       ])
       .where('user.email = :email', { email })
       .getOne();
-
     if (!userFound) {
       return null;
     }

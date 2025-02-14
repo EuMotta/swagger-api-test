@@ -26,7 +26,6 @@ export class TaskService {
   }
 
   findAll(params: FindAllParameters): TaskDto[] {
-    console.log('taskc');
     return this.tasks.filter((t) => {
       let match = true;
       if (params.title !== undefined && !t.title.includes(params.title)) {
