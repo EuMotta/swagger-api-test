@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -111,7 +112,7 @@ export class UsersController {
   }
 
   @UseGuards(AdminOnly)
-  @Put('update_status/:email')
+  @Patch('update_status/:email')
   /* swagger start */
   @ApiOperation({
     summary: 'Update user status',

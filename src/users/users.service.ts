@@ -24,12 +24,14 @@ import { createApiResponse } from 'src/db/db-response';
 import { PageOptionsDto } from 'src/db/pagination/page-options.dto';
 import { PageDto } from 'src/db/pagination/page.dto';
 import { PageMetaDto } from 'src/db/pagination/page-meta.dto';
+import { AuditRepository } from 'src/audit/audit.repository';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(UserEntity)
     private usersRepository: Repository<UserEntity>,
+    private auditRepository: AuditRepository,
   ) {}
 
   async create(
@@ -163,22 +165,30 @@ export class UsersService {
       if (!userToUpdate) {
         throw new NotFoundException('Usuário não encontrado');
       }
+
+      const oldData = userToUpdate.is_active;
+
       if (data.status === true) {
         userToUpdate.is_active = !userToUpdate.is_active;
       }
 
       const errors = await validate(userToUpdate);
-
       if (errors.length > 0) {
         const messages = errors
-          .map((error) =>
-            error.constraints ? Object.values(error.constraints) : [],
-          )
+          .map((error) => Object.values(error.constraints || {}))
           .flat();
-
         throw new BadRequestException(messages);
       }
+
       await this.usersRepository.save(userToUpdate);
+
+      await this.auditRepository.logAudit({
+        user_id: userToUpdate.id,
+        method: 'PATCH',
+        path: `/users/update_status/${userToUpdate.email}`,
+        old_data: oldData,
+        new_data: userToUpdate.is_active,
+      });
 
       return {
         error: false,
@@ -187,17 +197,15 @@ export class UsersService {
       };
     } catch (error) {
       console.error('Erro ao atualizar usuário:', error);
-
       if (
         error instanceof NotFoundException ||
-        error instanceof UnauthorizedException ||
         error instanceof BadRequestException
       ) {
         throw error;
       }
-
       throw new InternalServerErrorException(
-        'Ocorreu um erro ao atualizar o usuário',
+        'Ocorreu um erro ao atualizar o usuário:',
+        error,
       );
     }
   }

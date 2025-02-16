@@ -8,10 +8,12 @@ import { ConfigModule } from '@nestjs/config';
 import { DbModule } from './db/db.module';
 
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { seconds } from './utils';
 import { RegisterController } from './register/register.controller';
 import { RegisterModule } from './register/register.module';
+import { AuditController } from './audit/audit.controller';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -19,7 +21,6 @@ import { RegisterModule } from './register/register.module';
     UsersModule,
     AuthModule,
     DbModule,
-
     ThrottlerModule.forRoot({
       errorMessage: () => 'limite de requisição excedido',
       throttlers: [
@@ -35,13 +36,11 @@ import { RegisterModule } from './register/register.module';
         },
       ],
     }),
-
     RegisterModule,
   ],
-  controllers: [AppController, RegisterController],
+  controllers: [AppController, RegisterController, AuditController],
   providers: [
     AppService,
-
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
