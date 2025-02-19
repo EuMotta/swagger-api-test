@@ -129,6 +129,7 @@ export class UsersController {
    * @throws {BadRequestException} Se o e-mail for inválido ou a busca falhar.
    */
 
+  @Throttle({ default: { limit: 1, ttl: 500 } })
   @Get('/:email')
   /* swagger start */
   @ApiOperation({
@@ -146,7 +147,9 @@ export class UsersController {
   })
   @ApiBody({ type: CreateUserResponse })
   /* swagger end */
-  findByEmail(@Param('email') email: string) {
+  async findByEmail(
+    @Param('email') email: string,
+  ): Promise<ApiResponseData<UserDto | null> | null> {
     return this.usersService.findByUserEmail(email);
   }
 
@@ -165,6 +168,7 @@ export class UsersController {
    */
 
   @UseGuards(AdminOnly)
+  @Throttle({ default: { limit: 1, ttl: 500 } })
   @Put('/:email')
   /* swagger start */
   @ApiOperation({
@@ -182,7 +186,10 @@ export class UsersController {
   })
   @ApiBody({ type: UpdateUserResponse })
   /* swagger end */
-  update(@Param('email') email: string, @Body() user: UpdateUserResponse) {
+  async update(
+    @Param('email') email: string,
+    @Body() user: UpdateUserResponse,
+  ): Promise<ApiResponseData<UpdateUserResponse>> {
     return this.usersService.update(email, user);
   }
 
@@ -216,10 +223,10 @@ export class UsersController {
   })
   @ApiBody({ type: UpdateUserStatusResponse })
   /* swagger end */
-  updateStatus(
+  async updateStatus(
     @Param('email') email: string,
     @Body() data: UpdateUserStatusResponse,
-  ) {
+  ): Promise<ApiResponseData<UpdateUserStatusResponse>> {
     return this.usersService.updateStatus(email, data);
   }
 
@@ -253,10 +260,10 @@ export class UsersController {
   })
   @ApiBody({ type: UpdateUserEmailResponse })
   /* swagger end */
-  updateEmail(
+  async updateEmail(
     @Param('email') email: string,
     @Body() data: UpdateUserEmailResponse,
-  ) {
+  ): Promise<ApiResponseData<UpdateUserEmailResponse>> {
     return this.usersService.updateEmail(email, data);
   }
 }

@@ -8,6 +8,13 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 
+/**
+ * @class AdminOnly
+ *
+ * Guarda de segurança que restringe o acesso apenas a usuários administradores.
+ * Verifica o token JWT e garante que o usuário tenha a role `ADMIN` antes de permitir o acesso à rota protegida.
+ */
+
 @Injectable()
 export class AdminOnly implements CanActivate {
   constructor(

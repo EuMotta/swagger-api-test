@@ -11,11 +11,12 @@ import {
 import {
   CreateUserResponse,
   UpdateUserEmailResponse,
+  UpdateUserPasswordResponse,
   UpdateUserResponse,
   UpdateUserStatusResponse,
   UserDto,
 } from './user.dto';
-import { hashSync as bcryptHashSync } from 'bcrypt';
+import bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity, UserRole } from 'src/db/entities/user.entity';
 import { Repository } from 'typeorm';
@@ -83,7 +84,7 @@ export class UsersService {
         throw new BadRequestException(messages);
       }
 
-      dbUser.password = bcryptHashSync(newUser.password, 10);
+      dbUser.password = bcrypt.hashSync(newUser.password, 10);
 
       await this.usersRepository.save(dbUser);
 
@@ -144,7 +145,7 @@ export class UsersService {
       userToUpdate.image = data.image ?? userToUpdate.image;
 
       if (data.password) {
-        userToUpdate.password = bcryptHashSync(data.password, 10);
+        userToUpdate.password = bcrypt.hashSync(data.password, 10);
       }
 
       const errors = await validate(userToUpdate);
@@ -200,6 +201,10 @@ export class UsersService {
     data: UpdateUserEmailResponse,
   ): Promise<ApiResponseData<UpdateUserEmailResponse>> {
     try {
+      if (!this.isValidEmail(userEmail)) {
+        throw new BadRequestException('Formato de email inválido');
+      }
+
       if (!data.email) {
         throw new BadRequestException('Insira um email');
       }
@@ -212,7 +217,7 @@ export class UsersService {
       }
 
       if (data.email === userToUpdate.email) {
-        throw new ConflictException('Esse email ja está vinculado ao usuário');
+        throw new BadRequestException('O novo email é igual ao email atual');
       }
       const oldData = userToUpdate.email;
       if (data.email) {
@@ -243,16 +248,91 @@ export class UsersService {
         data: null,
       };
     } catch (error) {
-      console.error('Erro ao atualizar o email:', error);
+      console.error('Erro ao atualizar usuário:', error);
+
       if (
         error instanceof NotFoundException ||
+        error instanceof UnauthorizedException ||
         error instanceof BadRequestException
       ) {
         throw error;
       }
+
       throw new InternalServerErrorException(
-        'Ocorreu um erro ao atualizar o email:',
-        error,
+        'Ocorreu um erro interno no servidor.',
+      );
+    }
+  }
+
+  /**
+   * Atualiza o e-mail de um usuário.
+   *
+   * @param {string} userEmail - E-mail atual do usuário.
+   * @param {UpdateUserEmailResponse} data - Novo e-mail do usuário.
+   * @returns {Promise<ApiResponseData<UpdateUserEmailResponse>>} Confirmação da atualização.
+   * @throws {NotFoundException} Se o usuário não for encontrado.
+   * @throws {ConflictException} Se o novo e-mail já estiver em uso.
+   * @throws {BadRequestException} Se o e-mail for inválido.
+   * @throws {InternalServerErrorException} Se ocorrer um erro inesperado.
+   */
+
+  async updatePassword(
+    userEmail: string,
+    data: UpdateUserPasswordResponse,
+  ): Promise<ApiResponseData<UpdateUserPasswordResponse>> {
+    try {
+      if (!this.isValidEmail(userEmail)) {
+        throw new BadRequestException('Formato de email inválido');
+      }
+
+      if (!data.old_password) {
+        throw new BadRequestException('Insira a senha atual');
+      }
+
+      if (!data.new_password) {
+        throw new BadRequestException('Insira a nova senha');
+      }
+
+      const userToUpdate = await this.usersRepository.findOne({
+        where: { email: userEmail },
+      });
+
+      if (!userToUpdate) {
+        throw new NotFoundException('Usuário não encontrado');
+      }
+
+      if (bcrypt.compareSync(data.new_password, userToUpdate.password)) {
+        throw new BadRequestException('As senhas são iguais');
+      }
+
+      const errors = await validate(userToUpdate);
+      if (errors.length > 0) {
+        const messages = errors
+          .map((error) => Object.values(error.constraints || {}))
+          .flat();
+        throw new BadRequestException(messages);
+      }
+
+      await this.usersRepository.save(userToUpdate);
+
+      return {
+        error: false,
+        message: `Email atualizado com sucesso!`,
+        data: null,
+      };
+    } catch (error) {
+      console.error('Erro ao atualizar usuário:', error);
+
+      if (
+        error instanceof NotFoundException ||
+        error instanceof UnauthorizedException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        'Ocorreu um erro interno no servidor.',
       );
     }
   }
@@ -477,8 +557,9 @@ export class UsersService {
       ])
       .where('user.email = :email', { email })
       .getOne();
+
     if (!userFound) {
-      return null;
+      throw new NotFoundException('Usuário não encontrado');
     }
 
     return {

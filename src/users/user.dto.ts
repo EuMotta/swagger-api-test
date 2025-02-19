@@ -13,6 +13,12 @@ import {
 } from 'class-validator';
 import { UserRole } from 'src/db/entities/user.entity';
 
+/**
+ * @class UserDto
+ *
+ * DTO para representar as informações do usuário em respostas.
+ * Inclui validações com decorators da biblioteca `class-validator` e documentação para a API com `@ApiProperty` do NestJS Swagger.
+ */
 export class UserDto {
   @IsUUID()
   @ApiProperty({
@@ -120,6 +126,12 @@ export class UserDto {
   password: string;
 }
 
+/**
+ * @class CreateUserResponse
+ *
+ * Data Transfer Object (DTO) para a criação de um usuário.
+ * Inclui validações com decorators de `class-validator` e documentação para a API com `@ApiProperty` do NestJS Swagger.
+ */
 export class CreateUserResponse {
   @IsString()
   @IsNotEmpty({ message: 'O sobrenome não pode estar vazio' })
@@ -177,6 +189,12 @@ export class CreateUserResponse {
   password: string;
 }
 
+/**
+ * @class UpdateUserResponse
+ *
+ * Data Transfer Object (DTO) para atualizar as informações de um usuário.
+ * Inclui validações e documentação para as propriedades de atualização do usuário.
+ */
 export class UpdateUserResponse {
   @IsString()
   @IsOptional()
@@ -245,6 +263,11 @@ export class UpdateUserResponse {
   password: string;
 }
 
+/**
+ * @class UpdateUserStatusResponse
+ *
+ * Data Transfer Object (DTO) para atualizar o status do usuário.
+ */
 export class UpdateUserStatusResponse {
   @IsBoolean()
   @ApiProperty({
@@ -264,6 +287,12 @@ export class UpdateUserStatusResponse {
   })
   email: string;
 }
+
+/**
+ * @class UpdateUserEmailResponse
+ *
+ * Data Transfer Object (DTO) para atualizar o e-mail do usuário.
+ */
 export class UpdateUserEmailResponse {
   @IsEmail({}, { message: 'O e-mail deve ser válido' })
   @IsOptional()
@@ -275,4 +304,25 @@ export class UpdateUserEmailResponse {
     maxLength: 256,
   })
   email: string;
+}
+
+/**
+ * @class UpdateUserPasswordResponse
+ *
+ * DTO para atualizar o e-mail do usuário.
+ */
+export class UpdateUserPasswordResponse {
+  @IsString()
+  @ApiProperty({
+    description: 'User old password ',
+    example: 'Test@1234',
+  })
+  old_password: string;
+
+  @IsString()
+  @ApiProperty({
+    description: 'User new password ',
+    example: 'ATX@D341a',
+  })
+  new_password: string;
 }

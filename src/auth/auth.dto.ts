@@ -1,6 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
+/**
+ * @class AuthRequestDto
+ *
+ * DTO para a validação do login de um usuário.
+ *
+ */
 export class AuthRequestDto {
   @IsEmail()
   @IsNotEmpty()
@@ -18,6 +24,13 @@ export class AuthRequestDto {
   })
   password: string;
 }
+
+/**
+ * @class AuthResponseUser
+ *
+ * DTO para a o retorno dos dados do login de um usuário.
+ *
+ */
 
 class AuthResponseUser {
   @ApiProperty({
@@ -42,6 +55,11 @@ class AuthResponseUser {
   last_name: string;
 }
 
+/**
+ * @class AuthResponse
+ *
+ * DTO que representa a resposta da autenticação, incluindo o token JWT e os dados do usuário autenticado.
+ */
 class AuthResponse {
   @ApiProperty({
     description: 'JWT token returned after successful authentication',
@@ -66,6 +84,12 @@ class AuthResponse {
   })
   user: AuthResponseUser;
 }
+
+/**
+ * @class AuthResponseDto
+ *
+ * DTO para a resposta completa do login, incluindo status, mensagem e dados.
+ */
 
 export class AuthResponseDto {
   @ApiProperty({

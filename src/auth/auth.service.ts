@@ -10,10 +10,27 @@ import { AuthResponseDto } from './auth.dto';
 import { compareSync as bcryptCompareSync } from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 
+/**
+ * @service AuthService
+ *
+ * Serviço responsável pela autenticação dos usuários.
+ *
+ * Este serviço gerencia o processo de login e geração de tokens JWT para autenticação segura.
+ */
 @Injectable()
 export class AuthService {
+  /**
+   * @property {number} jwtExpirationTimeInSeconds
+   * @description Tempo de expiração do token JWT em segundos, definido no arquivo de configuração.
+   */
   private jwtExpirationTimeInSeconds: number;
 
+  /**
+   * @constructor
+   * @param {UsersService} usersService - Serviço de usuários para buscar informações de autenticação.
+   * @param {JwtService} jwtService - Serviço do NestJS para manipulação de tokens JWT.
+   * @param {ConfigService} configService - Serviço de configuração para acessar variáveis de ambiente.
+   */
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
@@ -24,9 +41,23 @@ export class AuthService {
     );
   }
 
+  /**
+   * @method signIn
+   * @description Autentica um usuário com base no e-mail e senha fornecidos.
+   *
+   * @param {string} email - O e-mail do usuário.
+   * @param {string} password - A senha do usuário.
+   * @returns {Promise<AuthResponseDto>} Retorna um objeto contendo o token JWT, tempo de expiração e informações do usuário.
+   *
+   * @throws {NotFoundException} Caso o usuário não seja encontrado.
+   * @throws {UnauthorizedException} Caso as credenciais sejam inválidas ou a conta esteja desativada/banida.
+   * @throws {InternalServerErrorException} Em caso de erro inesperado.
+   */
+
   async signIn(email: string, password: string): Promise<AuthResponseDto> {
     try {
       const findUser = await this.usersService.findByUserEmailAuth(email);
+
       if (!findUser) {
         throw new NotFoundException('Usuário não encontrado.');
       }
@@ -40,12 +71,15 @@ export class AuthService {
       if (!foundUser || !bcryptCompareSync(password, foundUser.password)) {
         throw new UnauthorizedException('Usuário não encontrado');
       }
+
       if (!foundUser.is_active) {
         throw new UnauthorizedException('Sua conta foi desativada');
       }
+
       if (foundUser.is_banned) {
         throw new UnauthorizedException('Sua conta está banida.');
       }
+
       const payload = {
         sub: foundUser.id,
         email: foundUser.email,

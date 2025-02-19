@@ -8,6 +8,14 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 
+/**
+ * @class AuthGuard
+ *
+ * Guarda de autenticação JWT para proteger rotas.
+ * Verifica a presença e validade do token no cabeçalho da requisição.
+ * Se o token for válido, adiciona os dados do usuário ao objeto da requisição.
+ */
+
 @Injectable()
 export class AuthGuard implements CanActivate {
   private jwtSecret: string;
