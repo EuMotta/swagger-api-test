@@ -57,6 +57,9 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'boolean', default: true })
   is_banned: boolean;
 
+  @Column({ type: 'boolean', default: false })
+  is_email_verified: boolean;
+
   @Column({ type: 'varchar', name: 'password' })
   @IsNotEmpty({ message: 'A senha é obrigatória.' })
   @IsStrongPassword(

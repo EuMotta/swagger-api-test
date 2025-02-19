@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import {
   CreateUserResponse,
+  UpdateUserEmailResponse,
   UpdateUserResponse,
   UpdateUserStatusResponse,
   UserDto,
@@ -26,6 +27,12 @@ import { PageDto } from 'src/db/pagination/page.dto';
 import { PageMetaDto } from 'src/db/pagination/page-meta.dto';
 import { AuditRepository } from 'src/audit/audit.repository';
 
+/**
+ * Serviço responsável pela gestão de usuários no sistema.
+ *
+ * Este serviço fornece métodos para criar, atualizar, buscar e listar usuários.
+ */
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -33,6 +40,16 @@ export class UsersService {
     private usersRepository: Repository<UserEntity>,
     private auditRepository: AuditRepository,
   ) {}
+
+  /**
+   * Cria um novo usuário no sistema.
+   *
+   * @param {CreateUserResponse} newUser - Dados do usuário a ser criado.
+   * @returns {Promise<ApiResponseData<CreateUserResponse>>} Detalhes do usuário criado.
+   * @throws {ConflictException} Se o e-mail já estiver cadastrado.
+   * @throws {BadRequestException} Se os dados forem inválidos.
+   * @throws {InternalServerErrorException} Se ocorrer um erro inesperado.
+   */
 
   async create(
     newUser: CreateUserResponse,
@@ -89,13 +106,26 @@ export class UsersService {
     }
   }
 
+  /**
+   * Atualiza os dados de um usuário pelo e-mail.
+   *
+   * @param {string} email - E-mail do usuário a ser atualizado.
+   * @param {UpdateUserResponse} data - Novos dados do usuário.
+   * @returns {Promise<ApiResponseData<UpdateUserResponse>>} Detalhes do usuário atualizado.
+   * @throws {NotFoundException} Se o usuário não for encontrado.
+   * @throws {BadRequestException} Se os dados forem inválidos.
+   * @throws {InternalServerErrorException} Se ocorrer um erro inesperado.
+   */
+
   async update(
+    email: string,
     data: UpdateUserResponse,
   ): Promise<ApiResponseData<UpdateUserResponse>> {
     try {
-      const userToUpdate = await this.usersRepository.findOne({
-        where: { email: data.email },
-      });
+      const userToUpdate = await this.usersRepository
+        .createQueryBuilder('user')
+        .where('user.email = :email', { email })
+        .getOne();
 
       if (!userToUpdate) {
         throw new NotFoundException('Usuário não encontrado');
@@ -153,6 +183,91 @@ export class UsersService {
     }
   }
 
+  /**
+   * Atualiza o e-mail de um usuário.
+   *
+   * @param {string} userEmail - E-mail atual do usuário.
+   * @param {UpdateUserEmailResponse} data - Novo e-mail do usuário.
+   * @returns {Promise<ApiResponseData<UpdateUserEmailResponse>>} Confirmação da atualização.
+   * @throws {NotFoundException} Se o usuário não for encontrado.
+   * @throws {ConflictException} Se o novo e-mail já estiver em uso.
+   * @throws {BadRequestException} Se o e-mail for inválido.
+   * @throws {InternalServerErrorException} Se ocorrer um erro inesperado.
+   */
+
+  async updateEmail(
+    userEmail: string,
+    data: UpdateUserEmailResponse,
+  ): Promise<ApiResponseData<UpdateUserEmailResponse>> {
+    try {
+      if (!data.email) {
+        throw new BadRequestException('Insira um email');
+      }
+      const userToUpdate = await this.usersRepository.findOne({
+        where: { email: userEmail },
+      });
+
+      if (!userToUpdate) {
+        throw new NotFoundException('Usuário não encontrado');
+      }
+
+      if (data.email === userToUpdate.email) {
+        throw new ConflictException('Esse email ja está vinculado ao usuário');
+      }
+      const oldData = userToUpdate.email;
+      if (data.email) {
+        userToUpdate.email = data.email;
+      }
+
+      const errors = await validate(userToUpdate);
+      if (errors.length > 0) {
+        const messages = errors
+          .map((error) => Object.values(error.constraints || {}))
+          .flat();
+        throw new BadRequestException(messages);
+      }
+
+      await this.usersRepository.save(userToUpdate);
+
+      await this.auditRepository.logAudit({
+        user_id: userToUpdate.id,
+        method: 'PATCH',
+        path: `/users/update_status/${userToUpdate.email}`,
+        old_data: oldData,
+        new_data: userToUpdate.email,
+      });
+
+      return {
+        error: false,
+        message: `Email atualizado com sucesso!`,
+        data: null,
+      };
+    } catch (error) {
+      console.error('Erro ao atualizar o email:', error);
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Ocorreu um erro ao atualizar o email:',
+        error,
+      );
+    }
+  }
+
+  /**
+   * Atualiza o status de um usuário (ativo/inativo).
+   *
+   * @param {string} userEmail - E-mail do usuário a ser atualizado.
+   * @param {UpdateUserStatusResponse} data - Novo status do usuário.
+   * @returns {Promise<ApiResponseData<UpdateUserStatusResponse>>} Confirmação da atualização.
+   * @throws {NotFoundException} Se o usuário não for encontrado.
+   * @throws {BadRequestException} Se os dados forem inválidos.
+   * @throws {InternalServerErrorException} Se ocorrer um erro inesperado.
+   */
+
   async updateStatus(
     userEmail: string,
     data: UpdateUserStatusResponse,
@@ -209,6 +324,15 @@ export class UsersService {
       );
     }
   }
+
+  /**
+   * Obtém uma lista paginada de usuários do sistema.
+   *
+   * @param {PageOptionsDto} pageOptionsDto - Opções de paginação e filtros de pesquisa.
+   * @returns {Promise<ApiResponseData<PageDto<UserDto>>>} Lista paginada de usuários.
+   * @throws {BadRequestException} Se os filtros forem inválidos.
+   * @throws {InternalServerErrorException} Se ocorrer um erro inesperado.
+   */
 
   async getAll(
     pageOptionsDto: PageOptionsDto,
@@ -281,6 +405,14 @@ export class UsersService {
     }
   }
 
+  /**
+   * Busca um usuário pelo e-mail, incluindo dados de autenticação.
+   *
+   * @param {string} email - E-mail do usuário.
+   * @returns {Promise<ApiResponseData<UserDto | null> | null>} Detalhes do usuário encontrado ou null se não existir.
+   * @throws {BadRequestException} Se o formato do e-mail for inválido.
+   */
+
   async findByUserEmailAuth(
     email: string,
   ): Promise<ApiResponseData<UserDto | null> | null> {
@@ -316,6 +448,14 @@ export class UsersService {
     };
   }
 
+  /**
+   * Busca um usuário pelo e-mail.
+   *
+   * @param {string} email - E-mail do usuário.
+   * @returns {Promise<ApiResponseData<UserDto | null> | null>} Detalhes do usuário encontrado ou null se não existir.
+   * @throws {BadRequestException} Se o formato do e-mail for inválido.
+   */
+
   async findByUserEmail(
     email: string,
   ): Promise<ApiResponseData<UserDto | null> | null> {
@@ -348,6 +488,12 @@ export class UsersService {
     };
   }
 
+  /**
+   * Valida se um endereço de e-mail possui um formato válido.
+   *
+   * @param {string} email - E-mail a ser validado.
+   * @returns {boolean} True se o e-mail for válido, False caso contrário.
+   */
   private isValidEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);

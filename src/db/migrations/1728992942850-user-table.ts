@@ -15,6 +15,7 @@ export class UserTable1728992942850 implements MigrationInterface {
           password varchar(256) NOT NULL,
           is_active boolean NOT NULL DEFAULT true,
           is_banned boolean NOT NULL DEFAULT false,
+          is_email_verified boolean NOT NULL DEFAULT false,
           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
           deleted_at TIMESTAMP,

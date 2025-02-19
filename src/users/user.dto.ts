@@ -70,6 +70,15 @@ export class UserDto {
   @IsBoolean()
   @IsOptional()
   @ApiProperty({
+    description: 'Indicates if the user email is verified',
+    example: true,
+    required: false,
+  })
+  is_email_verified: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  @ApiProperty({
     description: 'Indicates if the user is banned',
     example: false,
     required: false,
@@ -235,6 +244,7 @@ export class UpdateUserResponse {
   })
   password: string;
 }
+
 export class UpdateUserStatusResponse {
   @IsBoolean()
   @ApiProperty({
@@ -247,6 +257,18 @@ export class UpdateUserStatusResponse {
   @IsOptional()
   @ApiProperty({
     description: 'Email para atualizar o status E-mail do usuário',
+    example: 'joao@email.com',
+    format: 'email',
+    minLength: 1,
+    maxLength: 256,
+  })
+  email: string;
+}
+export class UpdateUserEmailResponse {
+  @IsEmail({}, { message: 'O e-mail deve ser válido' })
+  @IsOptional()
+  @ApiProperty({
+    description: 'Email para atualizar o E-mail do usuário',
     example: 'joao@email.com',
     format: 'email',
     minLength: 1,
