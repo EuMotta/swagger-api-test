@@ -13,6 +13,9 @@ import { seconds } from './utils';
 import { RegisterController } from './register/register.controller';
 import { RegisterModule } from './register/register.module';
 import { AuditController } from './audit/audit.controller';
+import { EmailVerifyController } from './email_verify/email_verify.controller';
+import { EmailVerifyService } from './email_verify/email_verify.service';
+import { EmailVerifyModule } from './email_verify/email_verify.module';
 
 @Module({
   imports: [
@@ -37,8 +40,9 @@ import { AuditController } from './audit/audit.controller';
       ],
     }),
     RegisterModule,
+    EmailVerifyModule,
   ],
-  controllers: [AppController, RegisterController, AuditController],
+  controllers: [AppController, RegisterController, AuditController, EmailVerifyController],
   providers: [
     AppService,
     {

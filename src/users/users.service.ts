@@ -3,8 +3,6 @@ import {
   Injectable,
   BadRequestException,
   InternalServerErrorException,
-  HttpException,
-  HttpStatus,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -16,7 +14,7 @@ import {
   UpdateUserStatusResponse,
   UserDto,
 } from './user.dto';
-import bcrypt from 'bcrypt';
+import { hashSync, compareSync } from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity, UserRole } from 'src/db/entities/user.entity';
 import { Repository } from 'typeorm';
@@ -56,7 +54,9 @@ export class UsersService {
     newUser: CreateUserResponse,
   ): Promise<ApiResponseData<CreateUserResponse>> {
     try {
-      const userAlreadyRegistered = await this.findByUserEmail(newUser.email);
+      const userAlreadyRegistered = await this.findByUserEmailAuth(
+        newUser.email,
+      );
       if (userAlreadyRegistered) {
         throw new ConflictException('Email já cadastrado');
       }
@@ -83,8 +83,7 @@ export class UsersService {
 
         throw new BadRequestException(messages);
       }
-
-      dbUser.password = bcrypt.hashSync(newUser.password, 10);
+      dbUser.password = hashSync(newUser.password, 10);
 
       await this.usersRepository.save(dbUser);
 
@@ -145,7 +144,7 @@ export class UsersService {
       userToUpdate.image = data.image ?? userToUpdate.image;
 
       if (data.password) {
-        userToUpdate.password = bcrypt.hashSync(data.password, 10);
+        userToUpdate.password = hashSync(data.password, 10);
       }
 
       const errors = await validate(userToUpdate);
@@ -201,12 +200,17 @@ export class UsersService {
     data: UpdateUserEmailResponse,
   ): Promise<ApiResponseData<UpdateUserEmailResponse>> {
     try {
+      console.log(userEmail)
+      console.log(data)
       if (!this.isValidEmail(userEmail)) {
         throw new BadRequestException('Formato de email inválido');
       }
 
+      if (!userEmail) {
+        throw new BadRequestException('Insira o email atual');
+      }
       if (!data.email) {
-        throw new BadRequestException('Insira um email');
+        throw new BadRequestException('Insira um novo email');
       }
       const userToUpdate = await this.usersRepository.findOne({
         where: { email: userEmail },
@@ -301,7 +305,7 @@ export class UsersService {
         throw new NotFoundException('Usuário não encontrado');
       }
 
-      if (bcrypt.compareSync(data.new_password, userToUpdate.password)) {
+      if (compareSync(data.new_password, userToUpdate.password)) {
         throw new BadRequestException('As senhas são iguais');
       }
 
@@ -317,7 +321,7 @@ export class UsersService {
 
       return {
         error: false,
-        message: `Email atualizado com sucesso!`,
+        message: `Senha atualizada com sucesso!`,
         data: null,
       };
     } catch (error) {
@@ -427,6 +431,7 @@ export class UsersService {
           'user.name',
           'user.last_name',
           'user.email',
+          'user.is_email_verified',
           'user.image',
           'user.is_active',
           'user.created_at',
@@ -550,6 +555,7 @@ export class UsersService {
         'user.name',
         'user.last_name',
         'user.email',
+        'user.is_email_verified',
         'user.image',
         'user.is_active',
         'user.created_at',
@@ -575,6 +581,7 @@ export class UsersService {
    * @param {string} email - E-mail a ser validado.
    * @returns {boolean} True se o e-mail for válido, False caso contrário.
    */
+
   private isValidEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);

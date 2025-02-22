@@ -63,7 +63,6 @@ export class UsersController {
    */
 
   @Throttle({ default: { limit: 1, ttl: 500 } })
-  @UseGuards(AdminOnly)
   @Post()
   @HttpCode(HttpStatus.OK)
   /* swagger start */
