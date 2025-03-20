@@ -15,17 +15,27 @@ import { UsersService } from './users.service';
 import {
   CreateUserResponse,
   UpdateUserEmailResponse,
+  UpdateUserPasswordResponse,
   UpdateUserResponse,
   UpdateUserStatusResponse,
   UserDto,
 } from './user.dto';
 import { Throttle } from '@nestjs/throttler';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ApiResponseData } from 'src/interfaces/api';
 import { PageDto } from 'src/db/pagination/page.dto';
 import { PageOptionsDto } from 'src/db/pagination/page-options.dto';
 import { AdminOnly } from 'src/guards/role.guard';
 import { AuthGuard } from 'src/auth/auth.guard';
+import { AxiosErrorResponseDto } from 'src/utils/error.dto';
+import { ApiResponseUser, ApiResponseUserList } from './user-swagger-response';
+import { ApiResponseSuccess } from 'src/utils/db-response.dto';
 
 /**
  * Controlador responsável pela gestão de usuários no sistema.
@@ -70,12 +80,20 @@ export class UsersController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Register successful',
+    type: ApiResponseSuccess,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Register Fail',
+    type: AxiosErrorResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
-    description: 'Register Fail',
+    description: 'Register Unauthorized',
+    type: AxiosErrorResponseDto,
   })
   @ApiBody({ type: CreateUserResponse })
+
   /* swagger end */
   async create(
     @Body() user: CreateUserResponse,
@@ -97,19 +115,23 @@ export class UsersController {
 
   @Throttle({ default: { limit: 1, ttl: 500 } })
   @Get()
-  /* swagger start */
   @ApiOperation({ summary: 'Get All Users', operationId: 'getAllUsers' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Get all users successful',
-    type: CreateUserResponse,
+    type: ApiResponseUserList,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Get all users Fail',
+    type: AxiosErrorResponseDto,
   })
-  @ApiBody({ type: UserDto })
-  /* swagger end */
+  @ApiQuery({ name: 'page', type: Number, required: false, example: 1 })
+  @ApiQuery({ name: 'limit', type: Number, required: false, example: 10 })
+  @ApiQuery({ name: 'search', type: String, required: false, example: '' })
+  @ApiQuery({ name: 'status', type: String, required: false, example: '' })
+  @ApiQuery({ name: 'order_by', type: String, required: false, example: '' })
+  @ApiQuery({ name: 'order', type: String, required: false, example: '' })
   async getAll(
     @Query() pageOptionsDto: PageOptionsDto,
   ): Promise<ApiResponseData<PageDto<UserDto>>> {
@@ -130,7 +152,6 @@ export class UsersController {
 
   @Throttle({ default: { limit: 1, ttl: 500 } })
   @Get('/:email')
-  /* swagger start */
   @ApiOperation({
     summary: 'Get User With Email',
     operationId: 'getUserByEmail',
@@ -138,14 +159,18 @@ export class UsersController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Get User With Email successful',
-    type: CreateUserResponse,
+    type: ApiResponseUser,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Get User With Email Fail',
+    description: 'Invalid request',
+    type: AxiosErrorResponseDto,
   })
-  @ApiBody({ type: CreateUserResponse })
-  /* swagger end */
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User not found',
+    type: AxiosErrorResponseDto,
+  })
   async findByEmail(
     @Param('email') email: string,
   ): Promise<ApiResponseData<UserDto | null> | null> {
@@ -177,11 +202,12 @@ export class UsersController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Update User With Email successful',
-    type: UpdateUserResponse,
+    type: ApiResponseSuccess,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Update User With Email Fail',
+    type: AxiosErrorResponseDto,
   })
   @ApiBody({ type: UpdateUserResponse })
   /* swagger end */
@@ -214,11 +240,12 @@ export class UsersController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Update User status successful',
-    type: UpdateUserStatusResponse,
+    type: ApiResponseSuccess,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Update User status Fail',
+    type: AxiosErrorResponseDto,
   })
   @ApiBody({ type: UpdateUserStatusResponse })
   /* swagger end */
@@ -251,11 +278,12 @@ export class UsersController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Update User email successful',
-    type: UpdateUserEmailResponse,
+    type: ApiResponseSuccess,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Update User status Fail',
+    type: AxiosErrorResponseDto,
   })
   @ApiBody({ type: UpdateUserEmailResponse })
   /* swagger end */
@@ -264,5 +292,43 @@ export class UsersController {
     @Body() data: UpdateUserEmailResponse,
   ): Promise<ApiResponseData<UpdateUserEmailResponse>> {
     return this.usersService.updateEmail(email, data);
+  }
+
+  /**
+   * Atualizar a senha do usuário pelo email.
+   *
+   * Este endpoint permite apenas administradores atualizarem o status.
+   *
+   * @summary Atualizar a senha do usuário
+   * @param {string} email - Email que será utilizado para atualizar
+   * @param {UpdateUserStatusResponse} data - Variavel para atualizar o email
+   * @returns {Promise<UpdateUserEmailResponse>} email atualizado.
+   * @throws {BadRequestException} Caso a operação falhe.
+   */
+
+  @UseGuards(AdminOnly)
+  @Patch('update_password/:email')
+  /* swagger start */
+  @ApiOperation({
+    summary: 'Update user email',
+    operationId: 'updateUserPassword',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Update User email successful',
+    type: ApiResponseSuccess,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Update User status Fail',
+    type: AxiosErrorResponseDto,
+  })
+  @ApiBody({ type: UpdateUserPasswordResponse })
+  /* swagger end */
+  async updatePassword(
+    @Param('email') email: string,
+    @Body() data: UpdateUserPasswordResponse,
+  ): Promise<ApiResponseData<UpdateUserPasswordResponse>> {
+    return this.usersService.updatePassword(email, data);
   }
 }

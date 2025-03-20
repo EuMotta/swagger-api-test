@@ -200,8 +200,8 @@ export class UsersService {
     data: UpdateUserEmailResponse,
   ): Promise<ApiResponseData<UpdateUserEmailResponse>> {
     try {
-      console.log(userEmail)
-      console.log(data)
+      console.log(userEmail);
+      console.log(data);
       if (!this.isValidEmail(userEmail)) {
         throw new BadRequestException('Formato de email inválido');
       }
@@ -289,10 +289,6 @@ export class UsersService {
         throw new BadRequestException('Formato de email inválido');
       }
 
-      if (!data.old_password) {
-        throw new BadRequestException('Insira a senha atual');
-      }
-
       if (!data.new_password) {
         throw new BadRequestException('Insira a nova senha');
       }
@@ -308,6 +304,12 @@ export class UsersService {
       if (compareSync(data.new_password, userToUpdate.password)) {
         throw new BadRequestException('As senhas são iguais');
       }
+
+      if (data.new_password) {
+        userToUpdate.password = hashSync(data.new_password, 10);
+      }
+
+      await this.usersRepository.save(userToUpdate);
 
       const errors = await validate(userToUpdate);
       if (errors.length > 0) {

@@ -12,6 +12,7 @@ import { EmailVerifyService } from './email_verify.service';
 import { EmailVerifyRequestDto } from './email_verify.dto';
 import { ApiResponseData } from 'src/interfaces/api';
 import { Throttle } from '@nestjs/throttler';
+import { AxiosErrorResponseDto } from 'src/utils/error.dto';
 
 @ApiTags('Email Verification')
 @Throttle({ default: { limit: 1, ttl: 500 } })
@@ -26,7 +27,10 @@ export class EmailVerifyController {
    */
   @Post()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Enviar email de verificação' })
+  @ApiOperation({
+    summary: 'Enviar email de verificação',
+    operationId: 'verifyUserEmail',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'E-mail enviado com sucesso',
@@ -43,7 +47,9 @@ export class EmailVerifyController {
    * @returns {Promise<{ message: string }>}
    */
   @Get('confirm')
-  @ApiOperation({ summary: 'Verificar token e ativar e-mail' })
+  @ApiOperation({
+    summary: 'Verificar token e ativar e-mail',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'E-mail verificado com sucesso',
@@ -51,6 +57,7 @@ export class EmailVerifyController {
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Token inválido ou expirado',
+    type: AxiosErrorResponseDto,
   })
   async confirmEmail(
     @Query('token') token: string,

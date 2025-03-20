@@ -56,3 +56,11 @@ export class EmailVerifyRequestDto {
   })
   email: string;
 }
+export class EmailVerifyRequest {
+  @IsEmail()
+  @ApiProperty({
+    description: 'User email address',
+    example: 'user@example.com',
+  })
+  email: string;
+}

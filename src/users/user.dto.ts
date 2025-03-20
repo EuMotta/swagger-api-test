@@ -7,6 +7,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsStrongPassword,
   IsUUID,
   MaxLength,
   MinLength,
@@ -129,7 +130,7 @@ export class UserDto {
 /**
  * @class CreateUserResponse
  *
- * Data Transfer Object (DTO) para a criação de um usuário.
+ * DTO para a criação de um usuário.
  * Inclui validações com decorators de `class-validator` e documentação para a API com `@ApiProperty` do NestJS Swagger.
  */
 export class CreateUserResponse {
@@ -192,7 +193,7 @@ export class CreateUserResponse {
 /**
  * @class UpdateUserResponse
  *
- * Data Transfer Object (DTO) para atualizar as informações de um usuário.
+ *DTO para atualizar as informações de um usuário.
  * Inclui validações e documentação para as propriedades de atualização do usuário.
  */
 export class UpdateUserResponse {
@@ -266,7 +267,7 @@ export class UpdateUserResponse {
 /**
  * @class UpdateUserStatusResponse
  *
- * Data Transfer Object (DTO) para atualizar o status do usuário.
+ * DTO para atualizar o status do usuário.
  */
 export class UpdateUserStatusResponse {
   @IsBoolean()
@@ -291,7 +292,7 @@ export class UpdateUserStatusResponse {
 /**
  * @class UpdateUserEmailResponse
  *
- * Data Transfer Object (DTO) para atualizar o e-mail do usuário.
+ * DTO para atualizar o e-mail do usuário.
  */
 export class UpdateUserEmailResponse {
   @IsEmail({}, { message: 'O e-mail deve ser válido' })
@@ -309,20 +310,33 @@ export class UpdateUserEmailResponse {
 /**
  * @class UpdateUserPasswordResponse
  *
- * DTO para atualizar o e-mail do usuário.
+ * DTO para atualizar a senha do usuário.
  */
-export class UpdateUserPasswordResponse {
-  @IsString()
-  @ApiProperty({
-    description: 'User old password ',
-    example: 'Test@1234',
-  })
-  old_password: string;
 
+export class UpdateUserPasswordResponse {
   @IsString()
   @ApiProperty({
     description: 'User new password ',
     example: 'ATX@D341a',
   })
+  @IsStrongPassword(
+    {
+      minLength: 8,
+      minUppercase: 1,
+      minLowercase: 1,
+      minNumbers: 1,
+      minSymbols: 1,
+    },
+    {
+      message:
+        'A senha deve conter pelo menos 8 caracteres. Sendo uma maiúscula, uma minúscula, um numero e um símbolo',
+    },
+  )
   new_password: string;
 }
+
+/**
+ * @class ApiResponseUserDto
+ *
+ * DTO para receber no swagger as informações do usuário.
+ */
