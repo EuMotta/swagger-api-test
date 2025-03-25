@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from './utils/db-response-error';
-import { ResponseInterceptor } from './utils/db-response-success';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
@@ -20,8 +19,6 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
 
   app.useGlobalFilters(new AllExceptionsFilter());
-
-  app.useGlobalInterceptors(new ResponseInterceptor());
 
   app.enableCors({
     origin: 'http://localhost:3000',

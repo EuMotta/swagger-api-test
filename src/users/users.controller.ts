@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -282,7 +283,7 @@ export class UsersController {
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Update User status Fail',
+    description: 'Update User email Fail',
     type: AxiosErrorResponseDto,
   })
   @ApiBody({ type: UpdateUserEmailResponse })
@@ -292,6 +293,44 @@ export class UsersController {
     @Body() data: UpdateUserEmailResponse,
   ): Promise<ApiResponseData<UpdateUserEmailResponse>> {
     return this.usersService.updateEmail(email, data);
+  }
+
+  /**
+   * Atualizar o email do usuário pelo email atual.
+   *
+   * Este endpoint permite apenas administradores atualizarem o status.
+   *
+   * @summary Atualizar email do usuário
+   * @param {string} email - Email que será utilizado para atualizar
+   * @param {UpdateUserStatusResponse} data - Variavel para atualizar o email
+   * @returns {Promise<UpdateUserEmailResponse>} email atualizado.
+   * @throws {BadRequestException} Caso a operação falhe.
+   */
+
+  @Delete('/:email')
+  @ApiOperation({
+    summary: 'Delete user by email',
+    operationId: 'deleteUserByEmail',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User deleted successfully',
+    type: ApiResponseSuccess,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid request',
+    type: AxiosErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User not found',
+    type: AxiosErrorResponseDto,
+  })
+  async deleteByUserEmail(
+    @Param('email') email: string,
+  ): Promise<ApiResponseSuccess> {
+    return await this.usersService.deleteByUserEmail(email);
   }
 
   /**
@@ -310,17 +349,17 @@ export class UsersController {
   @Patch('update_password/:email')
   /* swagger start */
   @ApiOperation({
-    summary: 'Update user email',
+    summary: 'Update user password',
     operationId: 'updateUserPassword',
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Update User email successful',
+    description: 'Update User password successful',
     type: ApiResponseSuccess,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Update User status Fail',
+    description: 'Update User password Fail',
     type: AxiosErrorResponseDto,
   })
   @ApiBody({ type: UpdateUserPasswordResponse })

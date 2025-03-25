@@ -25,6 +25,7 @@ import { PageOptionsDto } from 'src/db/pagination/page-options.dto';
 import { PageDto } from 'src/db/pagination/page.dto';
 import { PageMetaDto } from 'src/db/pagination/page-meta.dto';
 import { AuditRepository } from 'src/audit/audit.repository';
+import { ApiResponseSuccess } from 'src/utils/db-response.dto';
 
 /**
  * Serviço responsável pela gestão de usuários no sistema.
@@ -575,6 +576,50 @@ export class UsersService {
       message: 'Usuário encontrado com sucesso!',
       data: userFound,
     };
+  }
+
+  /**
+   * Busca um usuário pelo e-mail.
+   *
+   * @param {string} email - E-mail do usuário.
+   * @returns {Promise<ApiResponseData<UserDto | null> | null>} Detalhes do usuário encontrado ou null se não existir.
+   * @throws {BadRequestException} Se o formato do e-mail for inválido.
+   */
+
+  async deleteByUserEmail(email: string): Promise<ApiResponseSuccess> {
+    try {
+      if (!this.isValidEmail(email)) {
+        throw new BadRequestException('Formato de email inválido');
+      }
+
+      const userFound = await this.usersRepository
+        .createQueryBuilder('user')
+        .where('user.email = :email', { email })
+        .getOne();
+
+      if (!userFound) {
+        throw new NotFoundException('Usuário não encontrado');
+      }
+
+      await this.usersRepository.remove(userFound);
+
+      return {
+        error: false,
+        message: 'Usuário deletado com sucesso!',
+      };
+    } catch (error) {
+      console.error('Erro ao atualizar usuário:', error);
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Ocorreu um erro ao atualizar o usuário:',
+        error,
+      );
+    }
   }
 
   /**

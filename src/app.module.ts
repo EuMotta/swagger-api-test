@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TaskModule } from './task/task.module';
@@ -8,14 +8,15 @@ import { ConfigModule } from '@nestjs/config';
 import { DbModule } from './db/db.module';
 
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD } from '@nestjs/core';
 import { seconds } from './utils';
-import { RegisterController } from './register/register.controller';
-import { RegisterModule } from './register/register.module';
 import { AuditController } from './audit/audit.controller';
 import { EmailVerifyController } from './email_verify/email_verify.controller';
-import { EmailVerifyService } from './email_verify/email_verify.service';
 import { EmailVerifyModule } from './email_verify/email_verify.module';
+import { AddressController } from './address/address.controller';
+import { AddressService } from './address/address.service';
+import { AddressModule } from './address/address.module';
+import { LoggingMiddleware } from './middlewares/logging.middleware';
 
 @Module({
   imports: [
@@ -39,10 +40,15 @@ import { EmailVerifyModule } from './email_verify/email_verify.module';
         },
       ],
     }),
-    RegisterModule,
     EmailVerifyModule,
+    AddressModule,
   ],
-  controllers: [AppController, RegisterController, AuditController, EmailVerifyController],
+  controllers: [
+    AppController,
+    AuditController,
+    EmailVerifyController,
+    AddressController,
+  ],
   providers: [
     AppService,
     {
@@ -51,4 +57,10 @@ import { EmailVerifyModule } from './email_verify/email_verify.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(LoggingMiddleware)
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+}

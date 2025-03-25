@@ -276,17 +276,6 @@ export class UpdateUserStatusResponse {
     example: true,
   })
   status: boolean;
-
-  @IsEmail({}, { message: 'O e-mail deve ser válido' })
-  @IsOptional()
-  @ApiProperty({
-    description: 'Email para atualizar o status E-mail do usuário',
-    example: 'joao@email.com',
-    format: 'email',
-    minLength: 1,
-    maxLength: 256,
-  })
-  email: string;
 }
 
 /**

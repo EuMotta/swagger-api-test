@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import {
   IsEmail,
   IsEnum,
@@ -8,6 +8,7 @@ import {
   Length,
 } from 'class-validator';
 import { BaseEntity } from './base.entity';
+import { AddressEntity } from './address.entity';
 
 export enum UserRole {
   ADMIN = 'ADMIN',
@@ -76,4 +77,7 @@ export class UserEntity extends BaseEntity {
     },
   )
   password: string;
+
+  @OneToMany(() => AddressEntity, (address) => address.user, { cascade: true })
+  address: AddressEntity[];
 }
