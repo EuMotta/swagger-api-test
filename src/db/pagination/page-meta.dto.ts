@@ -5,6 +5,7 @@ export interface PageMetaDtoParameters {
   pageOptionsDto: PageOptionsDto;
   itemCount: number;
 }
+
 export class PageMetaDto {
   @ApiProperty()
   readonly page: number;
@@ -25,11 +26,14 @@ export class PageMetaDto {
   readonly has_next_page: boolean;
 
   constructor({ pageOptionsDto, itemCount }: PageMetaDtoParameters) {
-    this.page = pageOptionsDto.page;
-    this.limit = pageOptionsDto.limit;
-    this.item_count = itemCount;
-    this.page_count = Math.ceil(this.item_count / this.limit);
-    this.has_previous_page = this.page > 1;
-    this.has_next_page = this.page < this.page_count;
+    const page = Number(pageOptionsDto.page) || 1;
+    const limit = Number(pageOptionsDto.limit) || 10;
+
+    this.page = page;
+    this.limit = limit;
+    this.item_count = itemCount ?? 0;
+    this.page_count = limit > 0 ? Math.ceil(this.item_count / limit) : 1;
+    this.has_previous_page = page > 1;
+    this.has_next_page = page < this.page_count;
   }
 }

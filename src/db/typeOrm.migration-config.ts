@@ -1,7 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { config } from 'dotenv';
 import { DataSource, DataSourceOptions } from 'typeorm';
-import { TaskEntity } from './entities/task.entity';
 import { UserEntity } from './entities/user.entity';
 import { EmailVerifyEntity } from './entities/email_verify';
 import { AuditLog } from './entities/audit.entity';
@@ -19,7 +18,6 @@ const dataSourceOptions: DataSourceOptions = {
   password: configService.get<string>('DB_PASSWORD'),
   database: configService.get<string>('DB_NAME'),
   entities: [
-    TaskEntity,
     UserEntity,
     EmailVerifyEntity,
     AuditLog,

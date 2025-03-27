@@ -1,102 +1,67 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpStatus,
-  Param,
-  Post,
-  Put,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
-import { FindAllParameters, TaskDto } from './task.dto';
+import { Body, Controller, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { CreateTaskDto } from './task.dto';
 import { TaskService } from './task.service';
 import { AuthGuard } from 'src/auth/auth.guard';
-import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { TaskEntity } from 'src/db/entities/task.entity';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiResponseSuccess } from 'src/utils/db-response.dto';
+import { ApiResponseTask } from './task-swagger-response';
+import { AxiosErrorResponseDto } from 'src/utils/error.dto';
+
+/**
+ * Controlador responsável pela gestão de tarefas no sistema.
+ *
+ * Este controlador fornece endpoints para criar, listar, atualizar e excluir tarefas.
+ * Apenas usuários autenticados podem acessar esses recursos, garantindo segurança e controle de acesso.
+ *
+ * Funcionalidades incluídas:
+ * - Criação de novas tarefas associadas a um quadro.
+ * - Consulta de tarefas específicas ou listagem paginada.
+ * - Atualização de informações das tarefas, como status e descrição.
+ * - Remoção de tarefas indesejadas ou concluídas.
+ * - Proteção por autenticação utilizando `AuthGuard`.
+ *
+ * @module TaskController
+ */
 
 @UseGuards(AuthGuard)
+@ApiTags('tasks')
 @Controller('task')
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
+
+  /**
+   * Cria uma nova tarefa.
+   *
+   * Este endpoint permite a criação de uma nova tarefa dentro de um quadro.
+   * O usuário deve estar autenticado para realizar essa operação.
+   *
+   * @summary Criar Tarefa
+   * @param {CreateTaskDto} createTaskDto - Objeto contendo os dados da tarefa.
+   * @returns {Promise<ApiResponseSuccess>} Retorna uma resposta de sucesso ao criar a tarefa.
+   * @throws {UnauthorizedException} Se o usuário não estiver autenticado.
+   * @throws {BadRequestException} Se os dados fornecidos forem inválidos.
+   */
 
   @Post()
   @ApiOperation({ summary: 'Create a new task', operationId: 'createTask' })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'Task created successfully',
-    type: TaskEntity,
-  })
-  create(@Body() task: TaskDto) {
-    return this.taskService.create(task);
-  }
-
-  @Get('/:id')
-  @ApiOperation({
-    summary: 'Get task details by ID',
-    operationId: 'getTaskById',
+    type: ApiResponseTask,
   })
   @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'The found task',
-    type: TaskEntity,
-  })
-  findById(@Param('id') id: string) {
-    return this.taskService.findById(id);
-  }
-
-  @Get()
-  @ApiOperation({
-    summary: 'List tasks with optional filters',
-    operationId: 'listTasks',
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid data provided',
+    type: AxiosErrorResponseDto,
   })
   @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'List of tasks',
-    type: [TaskEntity],
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'User not authenticated',
+    type: AxiosErrorResponseDto,
   })
-  findAll(@Query() Params: FindAllParameters): TaskDto[] {
-    return this.taskService.findAll(Params);
-  }
-
-  @Put()
-  @ApiOperation({
-    summary: 'Update an existing task',
-    operationId: 'updateTask',
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Task updated successfully',
-    type: TaskEntity,
-  })
-  @ApiBody({
-    description: 'The task object to update',
-    type: TaskDto,
-    examples: {
-      example1: {
-        summary: 'Example task update',
-        value: {
-          id: 'a3e1f9c7-d2a1-41f0-9f9e-b86cb78a6ec3',
-          title: 'Updated Task Title',
-          description: 'Updated description for the task',
-          status: 'Completed',
-          expirationDate: '2025-12-31T23:59:59.000Z',
-        },
-      },
-    },
-  })
-  update(@Body() task: TaskDto) {
-    return this.taskService.update(task);
-  }
-
-  @Delete('/:id')
-  @ApiOperation({ summary: 'Delete a task by ID', operationId: 'deleteTask' })
-  @ApiResponse({
-    status: HttpStatus.NO_CONTENT,
-    description: 'Task deleted successfully',
-  })
-  remove(@Param('id') id: string) {
-    return this.taskService.remove(id);
+  async create(
+    @Body() createTaskDto: CreateTaskDto,
+  ): Promise<ApiResponseSuccess> {
+    return this.taskService.create(createTaskDto);
   }
 }

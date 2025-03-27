@@ -1,68 +1,56 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { FindAllParameters, TaskDto, TaskStatusEnun } from './task.dto';
-import { v4 as uuid } from 'uuid';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+
+import { CreateTaskDto } from './task.dto';
+import { Task, TaskDocument } from './task.schema';
+import { UsersService } from 'src/users/users.service';
+import { ApiResponseSuccess } from 'src/utils/db-response.dto';
 
 @Injectable()
 export class TaskService {
-  private tasks: TaskDto[] = [];
+  constructor(
+    @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
+    private readonly usersService: UsersService,
+  ) {}
 
-  create(task: TaskDto) {
-    task.id = uuid();
-    task.status = TaskStatusEnun.TO_DO;
-    this.tasks.push(task);
-  }
+  /**
+   * Cria uma nova tarefa validando se o usuário existe no PostgreSQL
+   */
+  async create(createTaskDto: CreateTaskDto): Promise<ApiResponseSuccess> {
+    const { title, list_id, users_reminder } = createTaskDto;
 
-  findById(id: string): TaskDto {
-    const foundTask = this.tasks.filter((t) => t.id === id);
-
-    if (foundTask.length) {
-      return foundTask[0];
+    if (!title) {
+      throw new BadRequestException('O título da tarefa é obrigatório');
     }
 
-    throw new HttpException(
-      `task com id: ${id} nao encontrada`,
-      HttpStatus.NOT_FOUND,
-    );
-  }
+    if (!list_id) {
+      throw new BadRequestException(
+        'A tarefa deve estar associada a uma lista',
+      );
+    }
 
-  findAll(params: FindAllParameters): TaskDto[] {
-    return this.tasks.filter((t) => {
-      let match = true;
-      if (params.title !== undefined && !t.title.includes(params.title)) {
-        match = false;
+    if (users_reminder && users_reminder.length > 0) {
+      for (const userId of users_reminder) {
+        const userExists = await this.usersService.findByUserId(userId);
+        if (!userExists) {
+          throw new NotFoundException(
+            `Usuário com ID ${userId} não encontrado`,
+          );
+        }
       }
-      if (params.status !== undefined && !t.status.includes(params.status)) {
-        match = false;
-      }
-
-      return match;
-    });
-  }
-
-  update(task: TaskDto) {
-    const taskIndex = this.tasks.findIndex((t) => t.id === task.id);
-
-    if (taskIndex >= 0) {
-      this.tasks[taskIndex] = task;
-      return;
     }
 
-    throw new HttpException(
-      `task com id: ${task.id} nao encontrada`,
-      HttpStatus.BAD_REQUEST,
-    );
-  }
+    const createdTask = new this.taskModel(createTaskDto);
+    await createdTask.save();
 
-  remove(id: string) {
-    const taskIndex = this.tasks.findIndex((t) => t.id === id);
-    if (taskIndex >= 0) {
-      this.tasks.splice(taskIndex, 1);
-      return;
-    }
-
-    throw new HttpException(
-      `task com id ${id} nao encontrado`,
-      HttpStatus.BAD_REQUEST,
-    );
+    return {
+      error: false,
+      message: 'Tarefa criada com sucesso!',
+    };
   }
 }

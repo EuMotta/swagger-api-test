@@ -4,7 +4,7 @@ import { AppService } from './app.service';
 import { TaskModule } from './task/task.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { DbModule } from './db/db.module';
 
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -17,14 +17,32 @@ import { AddressController } from './address/address.controller';
 import { AddressService } from './address/address.service';
 import { AddressModule } from './address/address.module';
 import { LoggingMiddleware } from './middlewares/logging.middleware';
+import { MongooseModule } from '@nestjs/mongoose';
+import { MongoModule } from './db/mongo.module';
+import { ListService } from './list/list.service';
+import { ListModule } from './list/list.module';
+import { BoardService } from './board/board.service';
+import { BoardController } from './board/board.controller';
+import { BoardModule } from './board/board.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    MongooseModule.forRootAsync({
+      inject: [ConfigService],
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        uri: configService.get<string>(
+          'MONGO_URI',
+          process.env.MONGO_URI || '',
+        ),
+      }),
+    }),
     TaskModule,
     UsersModule,
     AuthModule,
     DbModule,
+
     ThrottlerModule.forRoot({
       errorMessage: () => 'limite de requisição excedido',
       throttlers: [
@@ -42,12 +60,15 @@ import { LoggingMiddleware } from './middlewares/logging.middleware';
     }),
     EmailVerifyModule,
     AddressModule,
+    ListModule,
+    BoardModule,
   ],
   controllers: [
     AppController,
     AuditController,
     EmailVerifyController,
     AddressController,
+    BoardController,
   ],
   providers: [
     AppService,

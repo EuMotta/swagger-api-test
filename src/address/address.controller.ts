@@ -11,9 +11,9 @@ import { AddressService } from './address.service';
 import { ApiResponseSuccess } from 'src/utils/db-response.dto';
 import { AxiosErrorResponseDto } from 'src/utils/error.dto';
 import { CreateAddressDto } from './address.dto';
-import { UserEntity } from 'src/db/entities/user.entity';
 import { GetUser } from 'src/decorators/get-user.decorator';
 import { AuthGuard } from 'src/auth/auth.guard';
+import { TokenPayload } from 'src/interfaces/token.interface';
 
 @UseGuards(AuthGuard)
 @ApiTags('Address')
@@ -45,8 +45,8 @@ export class AddressController {
   @ApiBody({ type: CreateAddressDto })
   async create(
     @Body() addressData: CreateAddressDto,
-    @GetUser() user: UserEntity,
+    @GetUser() user: TokenPayload,
   ): Promise<ApiResponseSuccess> {
-    return this.addressService.create(user.id, addressData);
+    return this.addressService.create(user.sub, addressData);
   }
 }

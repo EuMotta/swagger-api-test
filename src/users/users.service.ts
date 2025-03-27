@@ -468,10 +468,10 @@ export class UsersService {
       }
 
       const itemCount = await queryBuilder.getCount();
-      const users = await queryBuilder.getMany();
+      const data = await queryBuilder.getMany();
 
       const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
-      const pageDto = new PageDto(users, pageMetaDto);
+      const pageDto = new PageDto(data, pageMetaDto);
 
       return {
         error: false,
@@ -565,6 +565,35 @@ export class UsersService {
         'user.is_banned',
       ])
       .where('user.email = :email', { email })
+      .getOne();
+
+    if (!userFound) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    return {
+      error: false,
+      message: 'Usuário encontrado com sucesso!',
+      data: userFound,
+    };
+  }
+  async findByUserId(
+    id: string,
+  ): Promise<ApiResponseData<UserDto | null> | null> {
+    const userFound = await this.usersRepository
+      .createQueryBuilder('user')
+      .select([
+        'user.id',
+        'user.name',
+        'user.last_name',
+        'user.email',
+        'user.is_email_verified',
+        'user.image',
+        'user.is_active',
+        'user.created_at',
+        'user.is_banned',
+      ])
+      .where('user.id = :id', { id })
       .getOne();
 
     if (!userFound) {
