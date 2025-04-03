@@ -9,7 +9,7 @@ import {
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AddressService } from './address.service';
 import { ApiResponseSuccess } from 'src/utils/db-response.dto';
-import { AxiosErrorResponseDto } from 'src/utils/error.dto';
+import { AxiosErrorResponse } from 'src/utils/error.dto';
 import { CreateAddressDto } from './address.dto';
 import { GetUser } from 'src/decorators/get-user.decorator';
 import { AuthGuard } from 'src/auth/auth.guard';
@@ -35,12 +35,12 @@ export class AddressController {
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid data',
-    type: AxiosErrorResponseDto,
+    type: AxiosErrorResponse,
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
     description: 'Unauthorized',
-    type: AxiosErrorResponseDto,
+    type: AxiosErrorResponse,
   })
   @ApiBody({ type: CreateAddressDto })
   async create(

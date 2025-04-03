@@ -1,12 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PageOptionsDto } from './page-options.dto';
+import { PageOptions } from './page-options.dto';
 
-export interface PageMetaDtoParameters {
-  pageOptionsDto: PageOptionsDto;
+export interface PageMetaParameters {
+  pageOptions: PageOptions;
   itemCount: number;
 }
 
-export class PageMetaDto {
+export class PageMeta {
   @ApiProperty()
   readonly page: number;
 
@@ -25,9 +25,9 @@ export class PageMetaDto {
   @ApiProperty()
   readonly has_next_page: boolean;
 
-  constructor({ pageOptionsDto, itemCount }: PageMetaDtoParameters) {
-    const page = Number(pageOptionsDto.page) || 1;
-    const limit = Number(pageOptionsDto.limit) || 10;
+  constructor({ pageOptions, itemCount }: PageMetaParameters) {
+    const page = Number(pageOptions.page) || 1;
+    const limit = Number(pageOptions.limit) || 10;
 
     this.page = page;
     this.limit = limit;

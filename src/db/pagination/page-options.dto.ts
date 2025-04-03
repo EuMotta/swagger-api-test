@@ -15,7 +15,7 @@ export enum Order {
   DESC = 'DESC',
 }
 
-export class PageOptionsDto {
+export class PageOptions {
   @ApiPropertyOptional({ enum: Order, default: Order.ASC })
   @IsEnum(Order)
   @IsOptional()

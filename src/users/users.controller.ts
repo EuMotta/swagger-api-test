@@ -30,11 +30,11 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ApiResponseData } from 'src/interfaces/api';
-import { PageDto } from 'src/db/pagination/page.dto';
-import { PageOptionsDto } from 'src/db/pagination/page-options.dto';
+import { Page } from 'src/db/pagination/page.dto';
+import { PageOptions } from 'src/db/pagination/page-options.dto';
 import { AdminOnly } from 'src/guards/role.guard';
 import { AuthGuard } from 'src/auth/auth.guard';
-import { AxiosErrorResponseDto } from 'src/utils/error.dto';
+import { AxiosErrorResponse } from 'src/utils/error.dto';
 import { ApiResponseUser, ApiResponseUserList } from './user-swagger-response';
 import { ApiResponseSuccess } from 'src/utils/db-response.dto';
 
@@ -86,12 +86,12 @@ export class UsersController {
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Register Fail',
-    type: AxiosErrorResponseDto,
+    type: AxiosErrorResponse,
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
     description: 'Register Unauthorized',
-    type: AxiosErrorResponseDto,
+    type: AxiosErrorResponse,
   })
   @ApiBody({ type: CreateUserResponse })
 
@@ -125,7 +125,7 @@ export class UsersController {
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Get all users Fail',
-    type: AxiosErrorResponseDto,
+    type: AxiosErrorResponse,
   })
   @ApiQuery({ name: 'page', type: Number, required: false, example: 1 })
   @ApiQuery({ name: 'limit', type: Number, required: false, example: 10 })
@@ -134,8 +134,8 @@ export class UsersController {
   @ApiQuery({ name: 'order_by', type: String, required: false, example: '' })
   @ApiQuery({ name: 'order', type: String, required: false, example: '' })
   async getAll(
-    @Query() pageOptionsDto: PageOptionsDto,
-  ): Promise<ApiResponseData<PageDto<UserDto>>> {
+    @Query() pageOptionsDto: PageOptions,
+  ): Promise<ApiResponseData<Page<UserDto>>> {
     return this.usersService.getAll(pageOptionsDto);
   }
 
@@ -165,12 +165,12 @@ export class UsersController {
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid request',
-    type: AxiosErrorResponseDto,
+    type: AxiosErrorResponse,
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'User not found',
-    type: AxiosErrorResponseDto,
+    type: AxiosErrorResponse,
   })
   async findByEmail(
     @Param('email') email: string,
@@ -208,7 +208,7 @@ export class UsersController {
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Update User With Email Fail',
-    type: AxiosErrorResponseDto,
+    type: AxiosErrorResponse,
   })
   @ApiBody({ type: UpdateUserResponse })
   /* swagger end */
@@ -246,7 +246,7 @@ export class UsersController {
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Update User status Fail',
-    type: AxiosErrorResponseDto,
+    type: AxiosErrorResponse,
   })
   @ApiBody({ type: UpdateUserStatusResponse })
   /* swagger end */
@@ -284,7 +284,7 @@ export class UsersController {
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Update User email Fail',
-    type: AxiosErrorResponseDto,
+    type: AxiosErrorResponse,
   })
   @ApiBody({ type: UpdateUserEmailResponse })
   /* swagger end */
@@ -320,12 +320,12 @@ export class UsersController {
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid request',
-    type: AxiosErrorResponseDto,
+    type: AxiosErrorResponse,
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'User not found',
-    type: AxiosErrorResponseDto,
+    type: AxiosErrorResponse,
   })
   async deleteByUserEmail(
     @Param('email') email: string,
@@ -360,9 +360,9 @@ export class UsersController {
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Update User password Fail',
-    type: AxiosErrorResponseDto,
+    type: AxiosErrorResponse,
   })
-  @ApiBody({ type: UpdateUserPasswordResponse })
+
   /* swagger end */
   async updatePassword(
     @Param('email') email: string,

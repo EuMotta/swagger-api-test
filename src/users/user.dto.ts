@@ -13,6 +13,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { UserRole } from 'src/db/entities/user.entity';
+import { Timestamps } from 'src/utils/timestamps.dto';
 
 /**
  * @class UserDto
@@ -20,24 +21,25 @@ import { UserRole } from 'src/db/entities/user.entity';
  * DTO para representar as informações do usuário em respostas.
  * Inclui validações com decorators da biblioteca `class-validator` e documentação para a API com `@ApiProperty` do NestJS Swagger.
  */
-export class UserDto {
+
+export class UserDto extends Timestamps {
   @IsUUID()
   @ApiProperty({
-    description: 'User unique identifier',
+    description: 'ID único de usuário',
     example: 'a3e1f9c7-d2a1-41f0-9f9e-b86cb78a6ec3',
   })
   id: string;
 
   @IsString()
   @ApiProperty({
-    description: 'User last name',
+    description: 'Sobrenome do usuário',
     example: 'Motta',
   })
   last_name: string;
 
   @IsString()
   @ApiProperty({
-    description: 'User first name',
+    description: 'primeiro nome do usuário',
     example: 'John',
   })
   name: string;
@@ -45,7 +47,7 @@ export class UserDto {
   @IsString()
   @IsOptional()
   @ApiProperty({
-    description: 'Profile image URL',
+    description: 'Imagem do usuário',
     example: 'https://example.com/profile.jpg',
     required: false,
   })
@@ -53,14 +55,14 @@ export class UserDto {
 
   @IsEmail()
   @ApiProperty({
-    description: 'User email address',
+    description: 'Endereço de email do usuário',
     example: 'user@example.com',
   })
   email: string;
 
   @IsString()
   @ApiProperty({
-    description: 'User role',
+    description: 'Cargo do usuário',
     example: 'Admin',
   })
   role: string;
@@ -68,7 +70,7 @@ export class UserDto {
   @IsBoolean()
   @IsOptional()
   @ApiProperty({
-    description: 'Indicates if the user is active',
+    description: 'Indicador se o usuário está ativo',
     example: true,
     required: false,
   })
@@ -77,7 +79,7 @@ export class UserDto {
   @IsBoolean()
   @IsOptional()
   @ApiProperty({
-    description: 'Indicates if the user email is verified',
+    description: 'Indicador se o usuário está com o email verificado',
     example: true,
     required: false,
   })
@@ -86,42 +88,15 @@ export class UserDto {
   @IsBoolean()
   @IsOptional()
   @ApiProperty({
-    description: 'Indicates if the user is banned',
+    description: 'Indicador se o usuário foi banido',
     example: false,
     required: false,
   })
   is_banned?: boolean;
 
-  @IsDate()
-  @IsOptional()
-  @ApiProperty({
-    description: 'User account creation timestamp',
-    example: '2024-02-08T12:00:00Z',
-    required: false,
-  })
-  created_at?: Date;
-
-  @IsDate()
-  @IsOptional()
-  @ApiProperty({
-    description: 'User last update timestamp',
-    example: '2024-02-08T12:30:00Z',
-    required: false,
-  })
-  updated_at?: Date;
-
-  @IsDate()
-  @IsOptional()
-  @ApiProperty({
-    description: 'User deletion timestamp (if soft deleted)',
-    example: null,
-    required: false,
-  })
-  deleted_at?: Date;
-
   @IsString()
   @ApiProperty({
-    description: 'User password (hashed)',
+    description: 'Senha do usuário (hashed)',
     example: '$2b$10$XXXXXXXXXXXXXXXXXXXXX',
   })
   password: string;
@@ -131,8 +106,9 @@ export class UserDto {
  * @class CreateUserResponse
  *
  * DTO para a criação de um usuário.
- * Inclui validações com decorators de `class-validator` e documentação para a API com `@ApiProperty` do NestJS Swagger.
+ * Inclui validações com decorators da biblioteca `class-validator` e documentação para a API com `@ApiProperty` do NestJS Swagger.
  */
+
 export class CreateUserResponse {
   @IsString()
   @IsNotEmpty({ message: 'O sobrenome não pode estar vazio' })
@@ -194,8 +170,9 @@ export class CreateUserResponse {
  * @class UpdateUserResponse
  *
  *DTO para atualizar as informações de um usuário.
- * Inclui validações e documentação para as propriedades de atualização do usuário.
+ * Inclui validações com decorators da biblioteca `class-validator` e documentação para a API com `@ApiProperty` do NestJS Swagger.
  */
+
 export class UpdateUserResponse {
   @IsString()
   @IsOptional()
@@ -239,7 +216,7 @@ export class UpdateUserResponse {
     minLength: 1,
     maxLength: 30,
   })
-  role: string;
+  role: UserRole;
 
   @IsEmail({}, { message: 'O e-mail deve ser válido' })
   @IsOptional()
@@ -268,7 +245,9 @@ export class UpdateUserResponse {
  * @class UpdateUserStatusResponse
  *
  * DTO para atualizar o status do usuário.
+ * Inclui validações com decorators da biblioteca `class-validator` e documentação para a API com `@ApiProperty` do NestJS Swagger.
  */
+
 export class UpdateUserStatusResponse {
   @IsBoolean()
   @ApiProperty({
@@ -283,6 +262,7 @@ export class UpdateUserStatusResponse {
  *
  * DTO para atualizar o e-mail do usuário.
  */
+
 export class UpdateUserEmailResponse {
   @IsEmail({}, { message: 'O e-mail deve ser válido' })
   @IsOptional()
@@ -300,12 +280,13 @@ export class UpdateUserEmailResponse {
  * @class UpdateUserPasswordResponse
  *
  * DTO para atualizar a senha do usuário.
+ * Inclui validações com decorators da biblioteca `class-validator` e documentação para a API com `@ApiProperty` do NestJS Swagger.
  */
 
 export class UpdateUserPasswordResponse {
   @IsString()
   @ApiProperty({
-    description: 'User new password ',
+    description: 'Nova senha do usuário',
     example: 'ATX@D341a',
   })
   @IsStrongPassword(
@@ -323,9 +304,3 @@ export class UpdateUserPasswordResponse {
   )
   new_password: string;
 }
-
-/**
- * @class ApiResponseUserDto
- *
- * DTO para receber no swagger as informações do usuário.
- */

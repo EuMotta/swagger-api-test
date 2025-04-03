@@ -9,7 +9,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { BoardService } from './board.service';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Board } from './board.schema';
 import { CreateBoardDto } from './board.dto';
 import { GetUser } from 'src/decorators/get-user.decorator';
@@ -17,9 +23,14 @@ import { ApiResponseSuccess } from 'src/utils/db-response.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { TokenPayload } from 'src/interfaces/token.interface';
 import { ApiResponseData } from 'src/interfaces/api';
-import { ApiResponseBoard } from './board-swagger-response';
-import { PageOptionsDto } from 'src/db/pagination/page-options.dto';
-import { PageDto } from 'src/db/pagination/page.dto';
+import {
+  ApiResponseBoard,
+  ApiResponseBoardList,
+} from './board-swagger-response';
+import { PageOptions } from 'src/db/pagination/page-options.dto';
+import { Page } from 'src/db/pagination/page.dto';
+import { AxiosErrorResponse } from 'src/utils/error.dto';
+import { Throttle } from '@nestjs/throttler';
 
 /**
  * Controlador responsável pela gestão de quadros no sistema.
@@ -36,7 +47,7 @@ import { PageDto } from 'src/db/pagination/page.dto';
  */
 
 @UseGuards(AuthGuard)
-@ApiTags('boards')
+@ApiTags('board')
 @Controller('board')
 export class BoardController {
   constructor(private readonly boardService: BoardService) {}
@@ -60,6 +71,11 @@ export class BoardController {
     description: 'Get Board successful',
     type: ApiResponseBoard,
   })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Get board Fail',
+    type: AxiosErrorResponse,
+  })
   async get(@Param('id') id: string): Promise<ApiResponseData<Board>> {
     return this.boardService.get(id);
   }
@@ -72,22 +88,28 @@ export class BoardController {
    * @summary Listar todos os quadros do usuário
    * @param {PageOptionsDto} pageOptions - Parâmetros de paginação (página e limite).
    * @param {TokenPayload} token - Token do usuário autenticado para identificar o dono dos quadros.
-   * @returns {Promise<ApiResponseData<PageDto<Board>>>} Lista paginada de quadros.
+   * @returns {Promise<ApiResponseData<Page<Board>>>} Lista paginada de quadros.
    */
 
+  @Throttle({ default: { limit: 1, ttl: 500 } })
   @Get()
   @ApiOperation({ summary: 'Show all boards', operationId: 'getAllBoards' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Get all boards successful',
-    type: ApiResponseBoard,
+    type: ApiResponseBoardList,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Get all boards Fail',
+    type: AxiosErrorResponse,
   })
   @ApiQuery({ name: 'page', type: Number, required: false, example: 1 })
   @ApiQuery({ name: 'limit', type: Number, required: false, example: 10 })
   async getAll(
-    @Query() pageOptions: PageOptionsDto,
+    @Query() pageOptions: PageOptions,
     @GetUser() token: TokenPayload,
-  ): Promise<ApiResponseData<PageDto<Board>>> {
+  ): Promise<ApiResponseData<Page<Board>>> {
     return this.boardService.getAll(pageOptions, token.sub);
   }
 
@@ -103,13 +125,22 @@ export class BoardController {
    * @throws {BadRequestException} Se os dados forem inválidos ou um quadro com o mesmo nome já existir.
    */
 
+  @Throttle({ default: { limit: 1, ttl: 500 } })
   @Post()
+  /* swagger start */
   @ApiOperation({ summary: 'Create a new Board', operationId: 'createBoard' })
   @ApiResponse({
-    status: 201,
+    status: HttpStatus.OK,
     description: 'Board created successfully',
-    type: Board,
+    type: ApiResponseSuccess,
   })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Get all boards Fail',
+    type: AxiosErrorResponse,
+  })
+  @ApiBody({ type: CreateBoardDto })
+  /* swagger end */
   async create(
     @Body() createBoard: CreateBoardDto,
     @GetUser() token: TokenPayload,

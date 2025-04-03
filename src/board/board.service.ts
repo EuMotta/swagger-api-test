@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
@@ -9,10 +10,12 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ApiResponseSuccess } from 'src/utils/db-response.dto';
 import { ApiResponseData } from 'src/interfaces/api';
-import { PageOptionsDto } from 'src/db/pagination/page-options.dto';
+import { PageOptions } from 'src/db/pagination/page-options.dto';
 import parse from '../utils/parse';
-import { PageDto } from 'src/db/pagination/page.dto';
-import { PageMetaDto } from 'src/db/pagination/page-meta.dto';
+import { Page } from 'src/db/pagination/page.dto';
+import { PageMeta } from 'src/db/pagination/page-meta.dto';
+import { ConfigService } from '@nestjs/config';
+import { generateUniqueShortLink } from 'src/utils/generate-short-link';
 
 @Injectable()
 export class BoardService {
@@ -42,7 +45,13 @@ export class BoardService {
         throw new BadRequestException('Já existe um quadro com este nome.');
       }
 
+      const shortLink = await generateUniqueShortLink(
+        this.boardModel,
+        'short_link',
+      );
       const createdBoard = new this.boardModel(createBoardDto);
+      createdBoard.short_link = shortLink;
+
       await createdBoard.save();
 
       return {
@@ -50,6 +59,12 @@ export class BoardService {
         message: `Quadro criado com sucesso!`,
       };
     } catch (error) {
+      if (
+        error instanceof ConflictException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
       console.error('Erro ao criar quadro:', error);
       throw new InternalServerErrorException(
         'Ocorreu um erro ao criar o quadro',
@@ -71,20 +86,41 @@ export class BoardService {
 
   async get(boardId: string): Promise<ApiResponseData<Board>> {
     try {
-      if (!Types.ObjectId.isValid(boardId)) {
-        throw new BadRequestException('ID do quadro inválido.');
+      let matchCondition: any;
+
+      if (Types.ObjectId.isValid(boardId)) {
+        matchCondition = { _id: new Types.ObjectId(boardId) };
+      } else {
+        matchCondition = { short_link: boardId };
       }
-      const objectId = new Types.ObjectId(boardId);
+
+      const configService = new ConfigService();
+      const shortLinkBase = configService.get<string>('SHORT_LINK_KANBAN');
 
       const board = await this.boardModel
         .aggregate([
-          { $match: { _id: objectId } },
+          { $match: matchCondition },
+          {
+            $addFields: {
+              member_qty: { $size: '$members' },
+              short_link: { $concat: [shortLinkBase, '$short_link'] },
+            },
+          },
+
           {
             $lookup: {
               from: 'lists',
               localField: '_id',
               foreignField: 'id_board',
               as: 'lists',
+            },
+          },
+          {
+            $lookup: {
+              from: 'tasks',
+              localField: '_id',
+              foreignField: 'board_id',
+              as: 'tasks',
             },
           },
         ])
@@ -112,26 +148,28 @@ export class BoardService {
    *
    * @async
    * @function getAll
-   * @param {PageOptionsDto} pageOptionsDto - Opções de paginação (limite, página, etc.).
+   * @param {PageOptions} PageOptions - Opções de paginação (limite, página, etc.).
    * @param {string} userId - ID do usuário dono dos quadros.
-   * @returns {Promise<ApiResponseData<PageDto<Board>>>} Retorna uma lista paginada de quadros.
+   * @returns {Promise<ApiResponseData<Page<Board>>>} Retorna uma lista paginada de quadros.
    *
    * @throws {BadRequestException} Se o ID do usuário não for informado.
    * @throws {InternalServerErrorException} Se ocorrer um erro ao buscar os quadros.
    */
 
   async getAll(
-    pageOptionsDto: PageOptionsDto,
+    pageOptions: PageOptions,
     userId: string,
-  ): Promise<ApiResponseData<PageDto<Board>>> {
+  ): Promise<ApiResponseData<Page<Board>>> {
     try {
       if (!userId) {
         throw new BadRequestException('ID do usuário é obrigatório.');
       }
 
-      const limit = parse.getNumberIfPositive(pageOptionsDto.limit) || 10;
-      const page = parse.getNumberIfPositive(pageOptionsDto.page) || 1;
+      const limit = parse.getNumberIfPositive(pageOptions.limit) || 10;
+      const page = parse.getNumberIfPositive(pageOptions.page) || 1;
       const offset = (page - 1) * limit;
+      const configService = new ConfigService();
+      const shortLinkBase = configService.get<string>('SHORT_LINK_KANBAN');
 
       const boardsAggregation = this.boardModel.aggregate([
         {
@@ -140,36 +178,13 @@ export class BoardService {
           },
         },
         {
-          $lookup: {
-            from: 'lists',
-            localField: '_id',
-            foreignField: 'id_board',
-            as: 'lists',
-          },
-        },
-        { $unwind: { path: '$lists', preserveNullAndEmptyArrays: true } },
-        {
-          $lookup: {
-            from: 'tasks',
-            localField: 'lists._id',
-            foreignField: 'list_id',
-            as: 'lists.tasks',
+          $addFields: {
+            member_qty: { $size: '$members' },
+            short_link: { $concat: [shortLinkBase, '$short_link'] },
           },
         },
         {
-          $group: {
-            _id: '$_id',
-            name: { $first: '$name' },
-            description: { $first: '$description' },
-            members: { $first: '$members' },
-            short_link: { $first: '$short_link' },
-            archived: { $first: '$archived' },
-            is_private: { $first: '$is_private' },
-            owner_id: { $first: '$owner_id' },
-            createdAt: { $first: '$createdAt' },
-            updatedAt: { $first: '$updatedAt' },
-            lists: { $push: '$lists' },
-          },
+          $unset: 'members',
         },
         { $skip: offset },
         { $limit: limit },
@@ -181,13 +196,13 @@ export class BoardService {
 
       const boards = await boardsAggregation.exec();
 
-      const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
-      const pageDto = new PageDto(boards, pageMetaDto);
+      const pageMeta = new PageMeta({ itemCount, pageOptions });
+      const paginated = new Page(boards, pageMeta);
 
       return {
         error: false,
         message: 'Quadros encontrados com sucesso!',
-        data: pageDto,
+        data: paginated,
       };
     } catch (error) {
       console.error('Erro ao buscar quadros:', error);
@@ -207,10 +222,18 @@ export class BoardService {
    * @throws {BadRequestException} Se o ID do quadro for inválido.
    */
 
-  findBoard(boardId: string) {
-    if (!Types.ObjectId.isValid(boardId)) {
+  async findBoard(
+    boardId: string | Types.ObjectId,
+  ): Promise<BoardDocument | null> {
+    if (typeof boardId === 'string') {
+      if (!Types.ObjectId.isValid(boardId)) {
+        throw new BadRequestException('ID do quadro inválido.');
+      }
+      boardId = new Types.ObjectId(boardId);
+    } else if (!(boardId instanceof Types.ObjectId)) {
       throw new BadRequestException('ID do quadro inválido.');
     }
-    return this.boardModel.findById(new Types.ObjectId(boardId));
+
+    return this.boardModel.findById(boardId).exec();
   }
 }

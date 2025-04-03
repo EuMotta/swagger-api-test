@@ -1,11 +1,10 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { Task } from "./task.schema";
+import { ApiProperty } from '@nestjs/swagger';
+import { ChangeTaskListDto, CreateTaskDto, Task } from './task.dto';
 
-/**
- * @class ApiResponseTask
- *
- * DTO para receber no swagger as informações da tarefa.
- */
+export class ChangeTaskList extends ChangeTaskListDto {}
+
+export class CreateTask extends CreateTaskDto {}
+
 export class ApiResponseTask {
   @ApiProperty({ example: false })
   error: boolean;

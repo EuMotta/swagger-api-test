@@ -22,7 +22,7 @@ export class AxiosErrorInnerResponseDto {
   data: ErrorResponseDto;
 }
 
-export class AxiosErrorResponseDto {
+export class AxiosErrorResponse {
   @ApiProperty({
     example: 'Usuário não encontrado',
     description: 'Mensagem explicando o erro',

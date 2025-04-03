@@ -1,8 +1,18 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
+/**
+ * Tipo do documento de uma Tarefa no MongoDB.
+ */
 export type TaskDocument = Task & Document;
 
+/**
+ * @class Task
+ *
+ * Representa a entidade de uma Tarefa dentro do MongoDB.
+ * Contém informações sobre título, lista associada, subtarefas,
+ * status de conclusão, datas e outros atributos.
+ */
 @Schema({ timestamps: true })
 export class Task {
   @Prop({
@@ -13,8 +23,17 @@ export class Task {
 
   @Prop({
     required: [true, 'Por favor, associe a tarefa a uma lista'],
+    type: Types.ObjectId,
+    ref: 'List',
   })
-  list_id: string;
+  list_id: Types.ObjectId;
+
+  @Prop({
+    required: [true, 'Por favor, associe a tarefa a um quadro'],
+    type: Types.ObjectId,
+    ref: 'Board',
+  })
+  board_id: Types.ObjectId;
 
   @Prop({
     default: '',
@@ -33,7 +52,7 @@ export class Task {
     ],
     default: [],
   })
-  tasks: { name: string }[];
+  sub_tasks: { name: string }[];
 
   @Prop({
     type: Boolean,
@@ -86,4 +105,7 @@ export class Task {
   due_date?: Date;
 }
 
+/**
+ * Esquema Mongoose para a entidade Task.
+ */
 export const TaskSchema = SchemaFactory.createForClass(Task);

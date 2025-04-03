@@ -6,11 +6,6 @@ export type ListDocument = List & Document;
 @Schema({ timestamps: true })
 export class List {
   @Prop({
-    required: [true, 'O ID da lista é obrigatório'],
-  })
-  id: string;
-
-  @Prop({
     required: [true, 'O nome da lista é obrigatório'],
     maxlength: [200, 'O nome pode ter no máximo 200 caracteres'],
   })

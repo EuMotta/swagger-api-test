@@ -2,9 +2,9 @@ import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { ListService } from './list.service';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { List } from './list.schema';
 import { CreateListDto } from './list.dto';
 import { ApiResponseSuccess } from 'src/utils/db-response.dto';
+import { AxiosErrorResponse } from 'src/utils/error.dto';
 
 /**
  * Controlador responsável pela gestão de listas no sistema.
@@ -43,11 +43,12 @@ export class ListController {
   @ApiResponse({
     status: 201,
     description: 'List created successfully',
-    type: List,
+    type: ApiResponseSuccess,
   })
   @ApiResponse({
     status: 400,
     description: 'Invalid data provided or list already exists',
+    type: AxiosErrorResponse,
   })
   @ApiResponse({
     status: 401,

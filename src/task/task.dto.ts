@@ -10,6 +10,12 @@ import {
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+/**
+ * @class SubTaskDto
+ *
+ * DTO para representar uma subtarefa dentro de uma tarefa principal.
+ */
+
 export class SubTaskDto {
   @ApiProperty({
     description: 'Nome da subtarefa',
@@ -19,6 +25,12 @@ export class SubTaskDto {
   @IsString({ message: 'O nome da subtarefa deve ser uma string' })
   name: string;
 }
+
+/**
+ * @class CreateTaskDto
+ *
+ * DTO para criar uma nova tarefa, incluindo subtarefas, prazos e atributos opcionais.
+ */
 
 export class CreateTaskDto {
   @ApiProperty({
@@ -30,7 +42,7 @@ export class CreateTaskDto {
   title: string;
 
   @ApiProperty({
-    description: 'ID da lista associada à tarefa (MongoDB)',
+    description: 'ID da lista associada à tarefa',
     example: '60b8d295f3a5f926e456b1a1',
   })
   @IsNotEmpty({ message: 'A tarefa deve estar associada a uma lista' })
@@ -39,18 +51,18 @@ export class CreateTaskDto {
 
   @ApiPropertyOptional({
     description: 'Descrição detalhada da tarefa',
-    example: 'Implementar autenticação usando JWT, Passport e NestJS',
+    example: 'Implementar autenticação usando JWT',
   })
   @IsOptional()
   @IsString({ message: 'A descrição deve ser uma string' })
   description?: string;
 
   @ApiPropertyOptional({
-    description: 'Lista de subtarefas ou itens de checklist',
+    description: 'Lista de subtarefas',
     type: [SubTaskDto],
   })
   @IsOptional()
-  @IsArray({ message: 'Tasks deve ser um array' })
+  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => SubTaskDto)
   tasks?: SubTaskDto[];
@@ -67,56 +79,94 @@ export class CreateTaskDto {
     example: '2024-06-15T08:00:00Z',
   })
   @IsOptional()
-  @IsDateString({}, { message: 'A data de início deve ser uma string no formato ISO' })
+  @IsDateString(
+    {},
+    { message: 'A data de início deve ser uma string no formato ISO' },
+  )
   start_date?: string;
 
   @ApiPropertyOptional({
-    description: 'Lista de labels associadas à tarefa',
+    description: 'Labels associadas à tarefa',
     example: ['backend', 'auth'],
   })
   @IsOptional()
-  @IsArray({ message: 'Labels deve ser um array' })
-  @IsString({ each: true, message: 'Cada label deve ser uma string' })
+  @IsArray()
+  @IsString({ each: true })
   labels?: string[];
 
   @ApiPropertyOptional({
-    description: 'Data de lembrete da tarefa',
+    description: 'Data de lembrete',
     example: '2024-06-20T12:00:00Z',
   })
   @IsOptional()
-  @IsDateString({}, { message: 'O lembrete deve ser uma string no formato ISO' })
+  @IsDateString()
   due_reminder?: string;
 
   @ApiPropertyOptional({
-    description: 'IDs dos usuários que receberão lembrete (PostgreSQL)',
+    description: 'IDs dos usuários para lembrete',
     example: ['550e8400-e29b-41d4-a716-446655440000'],
   })
   @IsOptional()
-  @IsArray({ message: 'Os usuários de lembrete devem ser um array' })
-  @IsUUID('4', { each: true, message: 'Cada usuário deve ter um ID válido (UUID)' })
+  @IsArray()
+  @IsUUID('4', { each: true })
   users_reminder?: string[];
 
-  @ApiPropertyOptional({
-    description: 'Link curto associado à tarefa',
-    example: 'abc123',
-  })
+  @ApiPropertyOptional({ description: 'Link curto', example: 'abc123' })
   @IsOptional()
-  @IsString({ message: 'O short_link deve ser uma string' })
+  @IsString()
   short_link?: string;
 
   @ApiPropertyOptional({
-    description: 'URL curta associada à tarefa',
+    description: 'URL curta',
     example: 'https://short.url/abc123',
   })
   @IsOptional()
-  @IsString({ message: 'O short_url deve ser uma string' })
+  @IsString()
   short_url?: string;
 
   @ApiPropertyOptional({
-    description: 'Data de vencimento da tarefa',
+    description: 'Data de vencimento',
     example: '2024-07-01T00:00:00Z',
   })
   @IsOptional()
-  @IsDateString({}, { message: 'A data de vencimento deve ser uma string no formato ISO' })
+  @IsDateString()
   due_date?: string;
+}
+
+/**
+ * @class ChangeTaskListDto
+ *
+ * DTO para trocar a tarefa de lista.
+ */
+
+export class ChangeTaskListDto {
+  @ApiProperty({
+    description: 'ID da lista associada à tarefa',
+    example: '60b8d295f3a5f926e456b1a1',
+  })
+  @IsNotEmpty({ message: 'A tarefa deve estar associada a uma lista' })
+  @IsString({ message: 'O ID da lista deve ser uma string' })
+  list_id: string;
+}
+
+export class ChangeTaskStatusDto {
+  @ApiProperty({
+    description: 'Se a tarefa está concluída',
+    example: false,
+  })
+  @IsOptional()
+  is_completed?: boolean;
+}
+
+/**
+ * @class TaskDto
+ *
+ * DTO para representar uma tarefa existente, com um identificador único.
+ */
+export class Task extends CreateTaskDto {
+  @ApiProperty({
+    description: 'ID único da tarefa',
+    example: '60b8d295f3a5f926e456b1a1',
+  })
+  _id: string;
 }

@@ -21,9 +21,9 @@ import { Repository } from 'typeorm';
 import { validate } from 'class-validator';
 import { ApiResponseData } from 'src/interfaces/api';
 import { createApiResponse } from 'src/db/db-response';
-import { PageOptionsDto } from 'src/db/pagination/page-options.dto';
-import { PageDto } from 'src/db/pagination/page.dto';
-import { PageMetaDto } from 'src/db/pagination/page-meta.dto';
+import { PageOptions } from 'src/db/pagination/page-options.dto';
+import { Page } from 'src/db/pagination/page.dto';
+import { PageMeta } from 'src/db/pagination/page-meta.dto';
 import { AuditRepository } from 'src/audit/audit.repository';
 import { ApiResponseSuccess } from 'src/utils/db-response.dto';
 
@@ -415,25 +415,27 @@ export class UsersService {
   /**
    * Obtém uma lista paginada de usuários do sistema.
    *
-   * @param {PageOptionsDto} pageOptionsDto - Opções de paginação e filtros de pesquisa.
-   * @returns {Promise<ApiResponseData<PageDto<UserDto>>>} Lista paginada de usuários.
+   * @param {PageOptions} pageOptionsDto - Opções de paginação e filtros de pesquisa.
+   * @returns {Promise<ApiResponseData<Page<UserDto>>>} Lista paginada de usuários.
    * @throws {BadRequestException} Se os filtros forem inválidos.
    * @throws {InternalServerErrorException} Se ocorrer um erro inesperado.
    */
 
   async getAll(
-    pageOptionsDto: PageOptionsDto,
-  ): Promise<ApiResponseData<PageDto<UserDto>>> {
+    pageOptions: PageOptions,
+  ): Promise<ApiResponseData<Page<UserDto>>> {
     try {
-      const { page, limit, search, status, order, orderBy } = pageOptionsDto;
+      const { page, limit, search, status, order, orderBy } = pageOptions;
       const offset = (page - 1) * limit;
 
       const queryBuilder = this.usersRepository
         .createQueryBuilder('user')
         .select([
+          'user.id',
           'user.name',
           'user.last_name',
           'user.email',
+          'user.role',
           'user.is_email_verified',
           'user.image',
           'user.is_active',
@@ -470,8 +472,8 @@ export class UsersService {
       const itemCount = await queryBuilder.getCount();
       const data = await queryBuilder.getMany();
 
-      const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
-      const pageDto = new PageDto(data, pageMetaDto);
+      const pageMetaDto = new PageMeta({ itemCount, pageOptions });
+      const pageDto = new Page(data, pageMetaDto);
 
       return {
         error: false,

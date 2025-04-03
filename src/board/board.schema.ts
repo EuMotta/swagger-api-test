@@ -27,6 +27,8 @@ export class Board {
   @Prop({
     type: String,
     default: null,
+    unique: true,
+    index: true,
     maxlength: [100, 'O short_link pode ter no máximo 100 caracteres'],
   })
   short_link?: string;

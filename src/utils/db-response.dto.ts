@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PageDto } from 'src/db/pagination/page.dto';
+import { Page } from 'src/db/pagination/page.dto';
 
 export class ApiResponseSuccess {
   @ApiProperty({ example: false })
@@ -17,9 +17,9 @@ export class ApiResponseBasePaginated<T> {
   message: string;
 
   @ApiProperty()
-  data: PageDto<T> | undefined;
+  data: Page<T> | undefined;
 
-  constructor(error: boolean, message: string, data?: PageDto<T>) {
+  constructor(error: boolean, message: string, data?: Page<T>) {
     this.error = error;
     this.message = message;
     this.data = data;

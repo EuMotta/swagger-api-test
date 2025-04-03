@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -69,6 +70,28 @@ export class ListService {
       console.error('Erro ao criar a lista:', error);
       throw new InternalServerErrorException(
         'Ocorreu um erro ao criar a lista',
+      );
+    }
+  }
+  async get(listId: string): Promise<List> {
+    try {
+      const existingList = await this.listModel.findOne({ _id: listId }).exec();
+      if (!existingList) {
+        throw new NotFoundException('Lista não encontrada.');
+      }
+      return existingList;
+    } catch (error) {
+      if (
+        error instanceof ConflictException ||
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      console.error('Erro ao buscar a lista:', error);
+      throw new InternalServerErrorException(
+        'Ocorreu um erro ao buscar a lista',
       );
     }
   }
