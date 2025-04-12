@@ -42,17 +42,11 @@ export class Task {
   description?: string;
 
   @Prop({
-    type: [
-      {
-        name: {
-          type: String,
-          required: [true, 'Cada subtarefa deve ter um nome'],
-        },
-      },
-    ],
-    default: [],
+    required: [true, 'Por favor, associe a tarefa a uma lista'],
+    type: Types.ObjectId,
+    ref: 'SubTask',
   })
-  sub_tasks: { name: string }[];
+  sub_tasks: Types.ObjectId;
 
   @Prop({
     type: Boolean,
@@ -105,7 +99,20 @@ export class Task {
   due_date?: Date;
 }
 
-/**
- * Esquema Mongoose para a entidade Task.
- */
 export const TaskSchema = SchemaFactory.createForClass(Task);
+
+/**
+ * Regra para deletar todas as subtasks
+ */
+TaskSchema.pre(
+  'deleteOne',
+  { document: true, query: false },
+  async function (next) {
+    const taskId = this._id;
+    const subTaskModel = this.model('SubTask');
+
+    await subTaskModel.deleteMany({ task_id: taskId });
+
+    next();
+  },
+);

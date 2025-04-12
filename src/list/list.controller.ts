@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { ListService } from './list.service';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -39,20 +39,20 @@ export class ListController {
    */
 
   @Post()
-  @ApiOperation({ summary: 'Create a new List', operationId: 'createList' })
+  @ApiOperation({ summary: 'Cria uma nova lista', operationId: 'createList' })
   @ApiResponse({
-    status: 201,
-    description: 'List created successfully',
+    status: HttpStatus.CREATED,
+    description: 'Lista criada com sucesso',
     type: ApiResponseSuccess,
   })
   @ApiResponse({
-    status: 400,
-    description: 'Invalid data provided or list already exists',
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Dados invalidos',
     type: AxiosErrorResponse,
   })
   @ApiResponse({
-    status: 401,
-    description: 'User not authenticated',
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Usuário não autenticado',
   })
   async create(@Body() createList: CreateListDto): Promise<ApiResponseSuccess> {
     return this.listService.create(createList);

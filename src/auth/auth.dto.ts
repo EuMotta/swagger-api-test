@@ -7,6 +7,7 @@ import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
  * DTO para a validação do login de um usuário.
  *
  */
+
 export class AuthRequestDto {
   @IsEmail()
   @IsNotEmpty()
@@ -60,6 +61,7 @@ class AuthResponseUser {
  *
  * DTO que representa a resposta da autenticação, incluindo o token JWT e os dados do usuário autenticado.
  */
+
 class AuthResponse {
   @ApiProperty({
     description: 'JWT token returned after successful authentication',

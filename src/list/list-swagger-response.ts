@@ -1,8 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsArray, IsNotEmpty, IsString, ValidateNested } from 'class-validator';
-import { Task } from 'src/task/task.dto';
 import { Limits } from './list.dto';
+import { Task } from 'src/task/task-swagger-response';
 
 /**
  * @class List

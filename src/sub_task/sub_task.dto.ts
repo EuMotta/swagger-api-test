@@ -3,13 +3,10 @@ import {
   IsString,
   IsOptional,
   IsArray,
-  ValidateNested,
   IsDateString,
   IsUUID,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { SubTask } from 'src/sub_task/sub_task-swagger-response';
 
 /**
  * @class CreateTaskDto
@@ -17,9 +14,9 @@ import { SubTask } from 'src/sub_task/sub_task-swagger-response';
  * DTO para criar uma nova tarefa, incluindo subtarefas, prazos e atributos opcionais.
  */
 
-export class CreateTaskDto {
+export class CreateSubTaskDto {
   @ApiProperty({
-    description: 'Título da tarefa',
+    description: 'Título da subtarefa',
     example: 'Implementar autenticação JWT',
   })
   @IsNotEmpty({ message: 'O título é obrigatório' })
@@ -27,12 +24,12 @@ export class CreateTaskDto {
   title: string;
 
   @ApiProperty({
-    description: 'ID da lista associada à tarefa',
+    description: 'ID da subtarefa associada à tarefa',
     example: '60b8d295f3a5f926e456b1a1',
   })
-  @IsNotEmpty({ message: 'A tarefa deve estar associada a uma lista' })
-  @IsString({ message: 'O ID da lista deve ser uma string' })
-  list_id: string;
+  @IsNotEmpty({ message: 'A subtarefa deve estar associada a uma tarefa' })
+  @IsString({ message: 'O ID da tarefa deve ser uma string' })
+  task_id: string;
 
   @ApiPropertyOptional({
     description: 'Descrição detalhada da tarefa',
@@ -43,14 +40,14 @@ export class CreateTaskDto {
   description?: string;
 
   @ApiPropertyOptional({
-    description: 'Se a tarefa está concluída',
+    description: 'Se a subtarefa está concluída',
     example: false,
   })
   @IsOptional()
   is_completed?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Data de início da tarefa',
+    description: 'Data de início da subtarefa',
     example: '2024-06-15T08:00:00Z',
   })
   @IsOptional()
@@ -59,15 +56,6 @@ export class CreateTaskDto {
     { message: 'A data de início deve ser uma string no formato ISO' },
   )
   start_date?: string;
-
-  @ApiProperty({
-    description: 'Labels associadas à tarefa',
-    example: ['backend', 'auth'],
-  })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  labels?: string[];
 
   @ApiPropertyOptional({
     description: 'Data de lembrete',
@@ -86,19 +74,6 @@ export class CreateTaskDto {
   @IsUUID('4', { each: true })
   users_reminder?: string[];
 
-  @ApiPropertyOptional({ description: 'Link curto', example: 'abc123' })
-  @IsOptional()
-  @IsString()
-  short_link?: string;
-
-  @ApiPropertyOptional({
-    description: 'URL curta',
-    example: 'https://short.url/abc123',
-  })
-  @IsOptional()
-  @IsString()
-  short_url?: string;
-
   @ApiPropertyOptional({
     description: 'Data de vencimento',
     example: '2024-07-01T00:00:00Z',
@@ -106,29 +81,4 @@ export class CreateTaskDto {
   @IsOptional()
   @IsDateString()
   due_date?: string;
-}
-
-/**
- * @class ChangeTaskListDto
- *
- * DTO para trocar a tarefa de lista.
- */
-
-export class ChangeTaskListDto {
-  @ApiProperty({
-    description: 'ID da lista associada à tarefa',
-    example: '60b8d295f3a5f926e456b1a1',
-  })
-  @IsNotEmpty({ message: 'A tarefa deve estar associada a uma lista' })
-  @IsString({ message: 'O ID da lista deve ser uma string' })
-  list_id: string;
-}
-
-export class ChangeTaskStatusDto {
-  @ApiProperty({
-    description: 'Se a tarefa está concluída',
-    example: false,
-  })
-  @IsOptional()
-  is_completed?: boolean;
 }

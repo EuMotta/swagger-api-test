@@ -273,12 +273,12 @@ export class UsersController {
   @Patch('update_email/:email')
   /* swagger start */
   @ApiOperation({
-    summary: 'Update user email',
+    summary: 'Atualizar email do usuário',
     operationId: 'updateUserEmail',
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Update User email successful',
+    description: 'Email atualizado com sucesso',
     type: ApiResponseSuccess,
   })
   @ApiResponse({
@@ -309,12 +309,12 @@ export class UsersController {
 
   @Delete('/:email')
   @ApiOperation({
-    summary: 'Delete user by email',
+    summary: 'Deletar usuário por email',
     operationId: 'deleteUserByEmail',
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'User deleted successfully',
+    description: 'Usuário deletado com sucesso',
     type: ApiResponseSuccess,
   })
   @ApiResponse({
@@ -324,7 +324,7 @@ export class UsersController {
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
-    description: 'User not found',
+    description: 'Usuário não encontrado',
     type: AxiosErrorResponse,
   })
   async deleteByUserEmail(
@@ -354,12 +354,12 @@ export class UsersController {
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Update User password successful',
+    description: 'Senha atualizada com sucesso',
     type: ApiResponseSuccess,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Update User password Fail',
+    description: 'Falha ao atualizar a senha',
     type: AxiosErrorResponse,
   })
 

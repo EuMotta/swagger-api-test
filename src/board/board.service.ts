@@ -121,6 +121,16 @@ export class BoardService {
               localField: '_id',
               foreignField: 'board_id',
               as: 'tasks',
+              pipeline: [
+                {
+                  $lookup: {
+                    from: 'subtasks',
+                    localField: '_id',
+                    foreignField: 'task_id',
+                    as: 'sub_tasks',
+                  },
+                },
+              ],
             },
           },
         ])

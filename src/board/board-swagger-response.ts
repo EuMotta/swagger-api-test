@@ -3,7 +3,7 @@ import { IsArray, IsBoolean, IsOptional, IsString, MaxLength, ValidateNested } f
 import { PageMeta } from 'src/db/pagination/page-meta.dto';
 import { Type } from 'class-transformer';
 import { List } from 'src/list/list-swagger-response';
-import { Task } from 'src/task/task.dto';
+import { Task } from 'src/task/task-swagger-response';
 
 export class Board {
   @ApiProperty({ example: 'Nome do Quadro', description: 'Nome do quadro' })

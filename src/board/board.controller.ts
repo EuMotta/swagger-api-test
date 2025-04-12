@@ -68,12 +68,12 @@ export class BoardController {
   @ApiOperation({ summary: 'Show board', operationId: 'getBoard' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Get Board successful',
+    description: 'Quadro encontrado com sucesso',
     type: ApiResponseBoard,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Get board Fail',
+    description: 'Dados invalidos',
     type: AxiosErrorResponse,
   })
   async get(@Param('id') id: string): Promise<ApiResponseData<Board>> {

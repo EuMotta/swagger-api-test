@@ -24,6 +24,9 @@ import { ListModule } from './list/list.module';
 import { BoardService } from './board/board.service';
 import { BoardController } from './board/board.controller';
 import { BoardModule } from './board/board.module';
+import { SubTaskController } from './sub_task/sub_task.controller';
+import { SubTaskService } from './sub_task/sub_task.service';
+import { SubTaskModule } from './sub_task/sub_task.module';
 
 @Module({
   imports: [
@@ -62,6 +65,7 @@ import { BoardModule } from './board/board.module';
     AddressModule,
     ListModule,
     BoardModule,
+    SubTaskModule,
   ],
   controllers: [
     AppController,
@@ -69,6 +73,7 @@ import { BoardModule } from './board/board.module';
     EmailVerifyController,
     AddressController,
     BoardController,
+    SubTaskController,
   ],
   providers: [
     AppService,

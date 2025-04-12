@@ -9,18 +9,13 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
-import {
-  ChangeTaskListDto,
-  ChangeTaskStatusDto,
-  CreateTaskDto,
-} from './task.dto';
+import { ChangeTaskListDto, CreateTaskDto } from './task.dto';
 import { Task, TaskDocument } from './task.schema';
 import { UsersService } from 'src/users/users.service';
 import { ApiResponseSuccess } from 'src/utils/db-response.dto';
 import { ListService } from 'src/list/list.service';
 import { TokenPayload } from 'src/interfaces/token.interface';
 import { BoardService } from 'src/board/board.service';
-import { BoardDocument } from 'src/board/board.schema';
 
 @Injectable()
 export class TaskService {
@@ -39,32 +34,28 @@ export class TaskService {
     try {
       const { title, list_id, users_reminder } = createTask;
 
-      if (!title) {
-        throw new BadRequestException('O título da tarefa é obrigatório');
+      if (!title)
+        throw new BadRequestException('O título da tarefa é obrigatório.');
+      if (!list_id)
+        throw new BadRequestException(
+          'A tarefa deve estar associada a uma lista.',
+        );
+
+      const existsList = await this.listService.get(list_id);
+      if (!existsList) {
+        throw new NotFoundException('Lista não encontrada.');
       }
 
-      if (!list_id) {
-        throw new BadRequestException(
-          'A tarefa deve estar associada a uma lista',
-        );
-      }
-      const existsList = await this.listService.get(list_id);
-      if (users_reminder && users_reminder.length > 0) {
-        for (const userId of users_reminder) {
-          const userExists = await this.usersService.findByUserId(userId);
-          if (!userExists) {
-            throw new NotFoundException(
-              `Usuário com ID ${userId} não encontrado`,
-            );
-          }
-        }
+      if (users_reminder?.length) {
+        await this.validateUsers(users_reminder);
       }
 
       const createdTask = new this.taskModel({
         ...createTask,
         board_id: new Types.ObjectId(existsList.id_board),
-        list_id: new Types.ObjectId(createTask.list_id),
+        list_id: new Types.ObjectId(list_id),
       });
+
       await createdTask.save();
 
       return {
@@ -72,19 +63,51 @@ export class TaskService {
         message: 'Tarefa criada com sucesso!',
       };
     } catch (error) {
+      console.error('Erro ao criar a tarefa:', error);
+
       if (
         error instanceof ConflictException ||
-        error instanceof BadRequestException
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
       ) {
         throw error;
       }
 
-      console.error('Erro ao criar a tarefa:', error);
       throw new InternalServerErrorException(
-        'Ocorreu um erro ao criar a tarefa',
+        'Ocorreu um erro ao criar a tarefa.',
       );
     }
   }
+
+  async get(id: string) {
+    try {
+      if (!id) throw new BadRequestException('O ID da tarefa é obrigatório.');
+
+      const task = await this.validateTask(id);
+
+      return {
+        error: false,
+        message: 'Tarefa encontrada com sucesso!',
+        data: task,
+      };
+    } catch (error) {
+      console.error('Erro ao atualizar o status da tarefa:', error);
+
+      if (
+        error instanceof ConflictException ||
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        'Ocorreu um erro ao atualizar a tarefa.',
+      );
+    }
+  }
+
   async changeList(
     changeTask: ChangeTaskListDto,
     id: string,
@@ -94,22 +117,15 @@ export class TaskService {
         throw new BadRequestException('O ID da tarefa é obrigatório.');
       }
 
-      const { list_id } = changeTask;
+      const { task } = await this.validateTaskAndList(id, changeTask.list_id);
 
-      if (!list_id) {
-        throw new BadRequestException(
-          'A tarefa deve estar associada a uma lista.',
-        );
-      }
-
-      const existsList = await this.listService.get(list_id);
-      if (!existsList) {
-        throw new NotFoundException('Lista não encontrada.');
+      if (task.list_id.equals(new Types.ObjectId(changeTask.list_id))) {
+        throw new ConflictException('Tarefa já está na lista desejada.');
       }
 
       const updatedTask = await this.taskModel.findByIdAndUpdate(
         { _id: id },
-        { $set: { list_id: new Types.ObjectId(list_id) } },
+        { $set: { list_id: new Types.ObjectId(changeTask.list_id) } },
         { new: true, runValidators: true },
       );
 
@@ -145,7 +161,7 @@ export class TaskService {
     try {
       if (!id) throw new BadRequestException('O ID da tarefa é obrigatório.');
 
-      const { task, board } = await this.validateTaskAndBoard(id, token);
+      await this.validateTaskAndBoard(id, token);
 
       await this.taskModel.findOneAndUpdate(
         { _id: id },
@@ -175,20 +191,59 @@ export class TaskService {
     }
   }
 
-  private async validateTaskAndBoard(id: string, token: TokenPayload) {
-    const task = await this.taskModel.findById(id);
+  async validateTask(taskId: string) {
+    const task = await this.taskModel
+      .aggregate([
+        {
+          $match: {
+            _id: new Types.ObjectId(taskId),
+          },
+        },
+        {
+          $lookup: {
+            from: 'subtasks',
+            localField: '_id',
+            foreignField: 'task_id',
+            as: 'sub_tasks',
+          },
+        },
+      ])
+      .exec();
+
+    if (!task || task.length === 0) {
+      throw new NotFoundException('Tarefa não encontrada.');
+    }
+
+    return task[0];
+  }
+
+  private async validateTaskAndList(taskId: string, list_id: string) {
+    const task = await this.taskModel.findById(taskId);
+    if (!task) throw new NotFoundException('Tarefa não encontrada.');
+
+    const existsList = await this.listService.get(list_id);
+    if (!existsList) {
+      throw new NotFoundException('Lista não encontrada.');
+    }
+
+    return { task };
+  }
+
+  private async validateUsers(userIds: string[]): Promise<void> {
+    for (const userId of userIds) {
+      const userExists = await this.usersService.findByUserId(userId);
+      if (!userExists) {
+        throw new NotFoundException(`Usuário com ID ${userId} não encontrado.`);
+      }
+    }
+  }
+
+  private async validateTaskAndBoard(taskId: string, token: TokenPayload) {
+    const task = await this.taskModel.findById(taskId);
     if (!task) throw new NotFoundException('Tarefa não encontrada.');
 
     const board = await this.boardService.findBoard(task.board_id);
     if (!board) throw new NotFoundException('Board não encontrado.');
-
-    const isUserAuthorized =
-      board.owner_id.toString() === token.sub ||
-      board.members.includes(token.sub);
-    if (!isUserAuthorized)
-      throw new ForbiddenException(
-        'Usuário sem permissão para acessar este board.',
-      );
 
     return { task, board };
   }

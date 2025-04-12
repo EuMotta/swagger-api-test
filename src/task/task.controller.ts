@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpStatus,
   Param,
   Patch,
@@ -24,6 +25,8 @@ import {
 import { AxiosErrorResponse } from 'src/utils/error.dto';
 import { GetUser } from 'src/decorators/get-user.decorator';
 import { TokenPayload } from 'src/interfaces/token.interface';
+import { ApiResponseData } from 'src/interfaces/api';
+import { Task } from './task.schema';
 
 /**
  * Controlador responsável pela gestão de tarefas no sistema.
@@ -61,20 +64,20 @@ export class TaskController {
    */
 
   @Post()
-  @ApiOperation({ summary: 'Create a new task', operationId: 'createTask' })
+  @ApiOperation({ summary: 'Cria uma nova tarefa', operationId: 'createTask' })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'Task created successfully',
+    description: 'Tarefa criada com sucesso',
     type: ApiResponseTask,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Invalid data provided',
+    description: 'Dados invalidos',
     type: AxiosErrorResponse,
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
-    description: 'User not authenticated',
+    description: 'Usuário não autenticado',
     type: AxiosErrorResponse,
   })
   @ApiBody({ type: CreateTask })
@@ -161,5 +164,45 @@ export class TaskController {
     @GetUser() token: TokenPayload,
   ): Promise<ApiResponseSuccess> {
     return this.taskService.updateStatus(id, token);
+  }
+
+  /**
+   * Retorna os dados de uma tarefa específica.
+   *
+   * Este endpoint permite buscar os detalhes de uma tarefa.
+   * Apenas usuários autenticados podem realizar essa operação.
+   *
+   * @summary Buscar tarefa por ID
+   * @param {string} id - ID da tarefa a ser buscada.
+   * @param {TokenPayload} token - Token do usuário autenticado.
+   * @returns {Promise<ApiResponseData<Task>>} Retorna os dados da tarefa solicitada.
+   * @throws {UnauthorizedException} Se o usuário não estiver autenticado.
+   * @throws {BadRequestException} Se os dados fornecidos forem inválidos.
+   */
+  @Get('/:id')
+  @ApiOperation({
+    summary: 'Buscar dados da tarefa',
+    operationId: 'getTaskById',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Tarefa encontrada com sucesso',
+    type: ApiResponseTask,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Dados inválidos fornecidos',
+    type: AxiosErrorResponse,
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Usuário não autenticado',
+    type: AxiosErrorResponse,
+  })
+  async get(
+    @Param('id') id: string,
+    @GetUser() token: TokenPayload,
+  ): Promise<ApiResponseData<Task>> {
+    return this.taskService.get(id);
   }
 }
